@@ -2,8 +2,8 @@ O Sistema Logística que Aquece é um website de gestão de doações desenvolvi
 
 🔑 Acesso:
 
-Usuário: visitante
+Usuário: Visitante
 
-Senha: visitante
+Senha: Visitante
 
 🔗 Acesse o projeto: https://sistemadegestaologisticaqueaquece.netlify.app/
