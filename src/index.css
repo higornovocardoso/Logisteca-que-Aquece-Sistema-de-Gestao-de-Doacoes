@@ -1,0 +1,148 @@
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --fundo: 241 244 246; /* névoa */
+    --superficie: 255 255 255;
+    --linha: 222 228 232;
+    --texto: 15 42 51; /* tinta-petróleo #0F2A33 */
+    --suave: 94 110 118; /* ardósia */
+    --tinta: 15 42 51;
+    --brasa: 228 87 46; /* #E4572E: a única cor quente, reservada para ações */
+    --brasa-escura: 196 68 30;
+    --brasa-clara: 252 233 226;
+    --petroleo: 38 104 119; /* estoque */
+    --petroleo-clara: 223 238 241;
+    --vinho: 158 64 82; /* descartes e ações destrutivas */
+    --vinho-clara: 247 228 232;
+    --trigo: 166 112 14; /* alerta de estoque baixo */
+    --trigo-clara: 252 241 214;
+    color-scheme: light;
+  }
+
+  :root.dark {
+    --fundo: 10 22 27;
+    --superficie: 16 32 38;
+    --linha: 33 54 62;
+    --texto: 226 234 237;
+    --suave: 139 157 165;
+    --tinta: 7 17 21;
+    --brasa: 240 112 74;
+    --brasa-escura: 228 87 46;
+    --brasa-clara: 63 31 23;
+    --petroleo: 99 175 191;
+    --petroleo-clara: 18 50 58;
+    --vinho: 214 122 140;
+    --vinho-clara: 60 27 35;
+    --trigo: 228 176 78;
+    --trigo-clara: 56 42 14;
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+
+  body {
+    @apply bg-fundo font-sans text-sm text-texto antialiased;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-petroleo/60 ring-offset-1 ring-offset-superficie;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Rótulo técnico: caixa-alta em fonte mono, para cabeçalhos de tabela e sobretítulos */
+  .rotulo-mono {
+    @apply font-mono text-rotulo font-medium uppercase text-suave;
+  }
+
+  .painel {
+    @apply rounded-xl border border-linha bg-superficie shadow-cartao;
+  }
+
+  .btn {
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-brasa {
+    @apply btn bg-brasa text-white shadow-sm hover:bg-brasa-escura dark:text-tinta dark:hover:text-white;
+  }
+
+  .btn-contorno {
+    @apply btn border border-linha bg-superficie text-texto shadow-sm hover:bg-fundo;
+  }
+
+  .btn-perigo {
+    @apply btn bg-vinho text-white shadow-sm hover:opacity-90 dark:text-tinta;
+  }
+
+  .btn-icone {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-suave transition-colors hover:bg-fundo hover:text-texto;
+  }
+
+  .rotulo {
+    @apply mb-1.5 block text-[13px] font-medium text-texto;
+  }
+
+  .campo {
+    @apply block h-9 w-full rounded-lg border border-linha bg-superficie px-3 text-sm text-texto shadow-sm transition-colors placeholder:text-suave/70 focus:border-petroleo focus:outline-none focus:ring-2 focus:ring-petroleo/20;
+  }
+
+  textarea.campo {
+    @apply h-auto py-2;
+  }
+
+  .campo-erro {
+    @apply border-vinho focus:border-vinho focus:ring-vinho/20;
+  }
+
+  /* Tamanho exibido como etiqueta da peça */
+  .tag-tamanho {
+    @apply inline-flex h-[22px] min-w-[2rem] items-center justify-center rounded border border-linha bg-fundo px-1.5 font-mono text-xs font-medium;
+  }
+
+  .sku {
+    @apply font-mono text-xs text-suave;
+  }
+
+  .tabela {
+    @apply w-full text-left text-sm;
+  }
+
+  .tabela th {
+    @apply rotulo-mono sticky top-0 z-10 whitespace-nowrap border-b border-linha bg-superficie px-4 py-2.5;
+  }
+
+  .tabela td {
+    @apply h-11 border-b border-linha/70 px-4 py-1.5 align-middle;
+  }
+
+  .tabela tbody tr:last-child td {
+    @apply border-b-0;
+  }
+
+  .tabela tbody tr {
+    @apply transition-colors hover:bg-fundo/70;
+  }
+
+  .numero {
+    @apply font-mono tabular-nums;
+  }
+}
