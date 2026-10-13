@@ -1,10 +1,18 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2, X, type LucideIcon } from 'lucide-react';
-import { useEffect, useId, type ReactNode, type SelectHTMLAttributes, type InputHTMLAttributes } from 'react';
+import {
+  useEffect,
+  useId,
+  useRef,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react';
 
 export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
   return (
-    <div className="flex items-center justify-center gap-3 py-16 text-slate-500">
+    <div className="flex items-center justify-center gap-3 py-20 text-suave" role="status">
       <Loader2 className="h-5 w-5 animate-spin" />
       <span className="text-sm">{texto}</span>
     </div>
@@ -12,111 +20,129 @@ export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
 }
 
 export function CabecalhoPagina({
+  sobretitulo,
   titulo,
   descricao,
   acoes,
 }: {
+  sobretitulo?: string;
   titulo: string;
   descricao?: string;
   acoes?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-primary dark:text-white">{titulo}</h1>
-        {descricao && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{descricao}</p>}
+        {sobretitulo && <p className="rotulo-mono mb-1.5 text-brasa">{sobretitulo}</p>}
+        <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
+        {descricao && <p className="mt-1 max-w-2xl text-suave">{descricao}</p>}
       </div>
       {acoes && <div className="flex flex-wrap gap-2">{acoes}</div>}
-    </div>
+    </header>
   );
 }
 
-const CORES_ESTATISTICA = {
-  azul: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300',
-  laranja: 'bg-orange-50 text-orange-600 dark:bg-orange-500/10 dark:text-orange-300',
-  verde: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
-  roxo: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300',
-};
-
-export function CartaoEstatistica({
-  titulo,
-  valor,
-  detalhe,
+export function EstadoVazio({
   icone: Icone,
-  cor,
+  titulo,
+  texto,
+  acao,
 }: {
-  titulo: string;
-  valor: string;
-  detalhe?: string;
   icone: LucideIcon;
-  cor: keyof typeof CORES_ESTATISTICA;
+  titulo: string;
+  texto?: string;
+  acao?: ReactNode;
 }) {
   return (
-    <div className="card flex items-start gap-4 p-5">
-      <div className={`rounded-xl p-3 ${CORES_ESTATISTICA[cor]}`}>
-        <Icone className="h-6 w-6" />
-      </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{titulo}</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums text-slate-900 dark:text-white">{valor}</p>
-        {detalhe && <p className="mt-0.5 text-xs text-slate-400">{detalhe}</p>}
-      </div>
-    </div>
-  );
-}
-
-export function EstadoVazio({ icone: Icone, titulo, texto }: { icone: LucideIcon; titulo: string; texto?: string }) {
-  return (
-    <div className="flex flex-col items-center px-6 py-14 text-center">
-      <div className="rounded-full bg-slate-100 p-4 dark:bg-slate-800">
-        <Icone className="h-7 w-7 text-slate-400" />
-      </div>
-      <p className="mt-4 font-semibold text-slate-700 dark:text-slate-200">{titulo}</p>
-      {texto && <p className="mt-1 max-w-sm text-sm text-slate-500 dark:text-slate-400">{texto}</p>}
+    <div className="flex flex-col items-center px-6 py-16 text-center">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-fundo"><Icone className="h-5 w-5 text-suave" strokeWidth={1.75} /></div>
+      <p className="mt-3 text-[15px] font-semibold">{titulo}</p>
+      {texto && <p className="mt-1 max-w-sm text-sm text-suave">{texto}</p>}
+      {acao && <div className="mt-5">{acao}</div>}
     </div>
   );
 }
 
 const CORES_SELO = {
-  verde: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  vermelho: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
-  amarelo: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
-  cinza: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
-  azul: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+  petroleo: 'bg-petroleo-clara text-petroleo',
+  brasa: 'bg-brasa-clara text-brasa-escura dark:text-brasa',
+  vinho: 'bg-vinho-clara text-vinho',
+  trigo: 'bg-trigo-clara text-trigo',
+  neutro: 'bg-fundo text-suave',
 };
 
 export function Selo({ cor, children }: { cor: keyof typeof CORES_SELO; children: ReactNode }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${CORES_SELO[cor]}`}>
+    <span className={`inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-medium ${CORES_SELO[cor]}`}>
       {children}
     </span>
+  );
+}
+
+export function Abas<T extends string>({
+  abas,
+  ativa,
+  aoTrocar,
+}: {
+  abas: Array<{ id: T; rotulo: string; contagem?: number }>;
+  ativa: T;
+  aoTrocar(id: T): void;
+}) {
+  return (
+    <div role="tablist" className="mb-5 flex gap-1 overflow-x-auto border-b border-linha">
+      {abas.map((aba) => (
+        <button
+          key={aba.id}
+          role="tab"
+          type="button"
+          aria-selected={aba.id === ativa}
+          onClick={() => aoTrocar(aba.id)}
+          className={`-mb-px flex items-center gap-2 whitespace-nowrap border-b-2 px-3 pb-2.5 pt-1 text-sm font-medium transition-colors ${
+            aba.id === ativa ? 'border-brasa text-texto' : 'border-transparent text-suave hover:text-texto'
+          }`}
+        >
+          {aba.rotulo}
+          {aba.contagem !== undefined && (
+            <span className="numero rounded-full bg-fundo px-2 text-xs text-suave">{aba.contagem}</span>
+          )}
+        </button>
+      ))}
+    </div>
   );
 }
 
 export function Modal({
   aberto,
   titulo,
+  descricao,
   aoFechar,
   children,
   largura = 'max-w-lg',
 }: {
   aberto: boolean;
   titulo: string;
+  descricao?: string;
   aoFechar(): void;
   children: ReactNode;
   largura?: string;
 }) {
   const tituloId = useId();
+  const caixa = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!aberto) return;
+    const focoAnterior = document.activeElement as HTMLElement | null;
     const aoTeclar = (e: KeyboardEvent) => e.key === 'Escape' && aoFechar();
     document.addEventListener('keydown', aoTeclar);
     const overflowAnterior = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => {
+      caixa.current?.querySelector<HTMLElement>('input, select, textarea, button:not([aria-label="Fechar"])')?.focus();
+    });
     return () => {
       document.removeEventListener('keydown', aoTeclar);
       document.body.style.overflow = overflowAnterior;
+      focoAnterior?.focus?.();
     };
   }, [aberto, aoFechar]);
 
@@ -125,31 +151,35 @@ export function Modal({
       {aberto && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
           <motion.div
-            className="absolute inset-0 bg-slate-900/50 backdrop-blur-xs"
+            className="absolute inset-0 bg-tinta/55 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={aoFechar}
           />
           <motion.div
+            ref={caixa}
             role="dialog"
             aria-modal="true"
             aria-labelledby={tituloId}
-            className={`card relative max-h-[92vh] w-full overflow-y-auto rounded-b-none sm:rounded-2xl ${largura}`}
-            initial={{ opacity: 0, y: 24 }}
+            className={`painel relative max-h-[94vh] w-full overflow-y-auto rounded-b-none shadow-flutuante sm:rounded-xl ${largura}`}
+            initial={{ opacity: 0, y: 28 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 24 }}
-            transition={{ duration: 0.2 }}
+            exit={{ opacity: 0, y: 28 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
-            <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4 dark:border-slate-800">
-              <h2 id={tituloId} className="text-lg font-semibold">
-                {titulo}
-              </h2>
-              <button type="button" className="btn-ghost" onClick={aoFechar} aria-label="Fechar">
+            <div className="flex items-start justify-between gap-4 px-6 pb-2 pt-5">
+              <div>
+                <h2 id={tituloId} className="text-lg font-semibold tracking-tight">
+                  {titulo}
+                </h2>
+                {descricao && <p className="mt-0.5 text-sm text-suave">{descricao}</p>}
+              </div>
+              <button type="button" className="btn-icone -mr-2" onClick={aoFechar} aria-label="Fechar">
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="px-6 py-5">{children}</div>
+            <div className="px-6 pb-6 pt-3">{children}</div>
           </motion.div>
         </div>
       )}
@@ -161,27 +191,30 @@ export function Confirmacao({
   aberto,
   titulo,
   mensagem,
-  textoConfirmar = 'Confirmar',
+  textoConfirmar,
   processando,
   aoConfirmar,
   aoCancelar,
+  children,
 }: {
   aberto: boolean;
   titulo: string;
   mensagem: ReactNode;
-  textoConfirmar?: string;
+  textoConfirmar: string;
   processando?: boolean;
   aoConfirmar(): void;
   aoCancelar(): void;
+  children?: ReactNode;
 }) {
   return (
     <Modal aberto={aberto} titulo={titulo} aoFechar={aoCancelar} largura="max-w-md">
-      <div className="text-sm text-slate-600 dark:text-slate-300">{mensagem}</div>
+      <div className="text-sm text-suave">{mensagem}</div>
+      {children}
       <div className="mt-6 flex justify-end gap-2">
-        <button type="button" className="btn-secondary" onClick={aoCancelar}>
+        <button type="button" className="btn-contorno" onClick={aoCancelar}>
           Cancelar
         </button>
-        <button type="button" className="btn-danger" onClick={aoConfirmar} disabled={processando}>
+        <button type="button" className="btn-perigo" onClick={aoConfirmar} disabled={processando}>
           {processando && <Loader2 className="h-4 w-4 animate-spin" />}
           {textoConfirmar}
         </button>
@@ -193,35 +226,70 @@ export function Confirmacao({
 interface CampoBase {
   rotulo: string;
   erro?: string;
+  dica?: string;
 }
 
-export function Campo({ rotulo, erro, id, className, ...props }: CampoBase & InputHTMLAttributes<HTMLInputElement>) {
+function Envoltorio({
+  id,
+  rotulo,
+  erro,
+  dica,
+  className,
+  children,
+}: CampoBase & { id: string; className?: string; children: ReactNode }) {
+  return (
+    <div className={className}>
+      <label htmlFor={id} className="rotulo">
+        {rotulo}
+      </label>
+      {children}
+      {erro ? (
+        <p id={`${id}-erro`} className="mt-1 text-xs font-medium text-vinho">
+          {erro}
+        </p>
+      ) : (
+        dica && <p className="mt-1 text-xs text-suave">{dica}</p>
+      )}
+    </div>
+  );
+}
+
+const atributosDeErro = (id: string, erro?: string) => ({
+  'aria-invalid': !!erro,
+  'aria-describedby': erro ? `${id}-erro` : undefined,
+});
+
+export function Campo({ rotulo, erro, dica, id, className, ...props }: CampoBase & InputHTMLAttributes<HTMLInputElement>) {
   const gerado = useId();
   const campoId = id ?? gerado;
   return (
-    <div className={className}>
-      <label htmlFor={campoId} className="label">
-        {rotulo}
-      </label>
-      <input
-        id={campoId}
-        className={`input ${erro ? 'input-erro' : ''}`}
-        aria-invalid={!!erro}
-        aria-describedby={erro ? `${campoId}-erro` : undefined}
-        {...props}
-      />
-      {erro && (
-        <p id={`${campoId}-erro`} className="mt-1 text-xs text-rose-600 dark:text-rose-400">
-          {erro}
-        </p>
-      )}
-    </div>
+    <Envoltorio id={campoId} rotulo={rotulo} erro={erro} dica={dica} className={className}>
+      <input id={campoId} className={`campo ${erro ? 'campo-erro' : ''}`} {...atributosDeErro(campoId, erro)} {...props} />
+    </Envoltorio>
+  );
+}
+
+export function AreaDeTexto({
+  rotulo,
+  erro,
+  dica,
+  id,
+  className,
+  ...props
+}: CampoBase & TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  const gerado = useId();
+  const campoId = id ?? gerado;
+  return (
+    <Envoltorio id={campoId} rotulo={rotulo} erro={erro} dica={dica} className={className}>
+      <textarea id={campoId} rows={2} className={`campo resize-none ${erro ? 'campo-erro' : ''}`} {...atributosDeErro(campoId, erro)} {...props} />
+    </Envoltorio>
   );
 }
 
 export function Selecao({
   rotulo,
   erro,
+  dica,
   id,
   className,
   children,
@@ -230,24 +298,52 @@ export function Selecao({
   const gerado = useId();
   const campoId = id ?? gerado;
   return (
-    <div className={className}>
-      <label htmlFor={campoId} className="label">
-        {rotulo}
-      </label>
-      <select
-        id={campoId}
-        className={`input ${erro ? 'input-erro' : ''}`}
-        aria-invalid={!!erro}
-        aria-describedby={erro ? `${campoId}-erro` : undefined}
-        {...props}
-      >
+    <Envoltorio id={campoId} rotulo={rotulo} erro={erro} dica={dica} className={className}>
+      <select id={campoId} className={`campo ${erro ? 'campo-erro' : ''}`} {...atributosDeErro(campoId, erro)} {...props}>
         {children}
       </select>
+    </Envoltorio>
+  );
+}
+
+/** Grupo de botões para escolher uma opção curta (ex.: gênero), mais rápido que uma lista suspensa. */
+export function Escolha<T extends string>({
+  rotulo,
+  opcoes,
+  valor,
+  aoEscolher,
+  erro,
+}: {
+  rotulo: string;
+  opcoes: readonly T[];
+  valor: string;
+  aoEscolher(valor: T): void;
+  erro?: string;
+}) {
+  const id = useId();
+  return (
+    <fieldset aria-describedby={erro ? `${id}-erro` : undefined}>
+      <legend className="rotulo">{rotulo}</legend>
+      <div className="flex flex-wrap gap-2">
+        {opcoes.map((opcao) => (
+          <label
+            key={opcao}
+            className={`flex h-9 cursor-pointer items-center rounded-lg border px-3 text-sm font-medium shadow-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-petroleo/60 ${
+              valor === opcao
+                ? 'border-texto bg-texto text-superficie'
+                : `border-linha bg-superficie text-texto hover:border-suave ${erro ? 'border-vinho' : ''}`
+            }`}
+          >
+            <input type="radio" name={id} value={opcao} checked={valor === opcao} onChange={() => aoEscolher(opcao)} className="sr-only" />
+            {opcao}
+          </label>
+        ))}
+      </div>
       {erro && (
-        <p id={`${campoId}-erro`} className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+        <p id={`${id}-erro`} className="mt-1 text-xs font-medium text-vinho">
           {erro}
         </p>
       )}
-    </div>
+    </fieldset>
   );
 }

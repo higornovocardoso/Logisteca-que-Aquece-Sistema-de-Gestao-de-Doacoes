@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { entradaSchema, extrairErros, saidaSchema } from './validation';
+import { descarteSchema, entradaSchema, extrairErros, novoUsuarioSchema, saidaSchema } from './validation';
 
 const entradaValida = {
   tipo: 'Casaco',
   tamanho: 'M',
-  publico: 'Feminino',
+  genero: 'Feminino',
+  fornecedor: 'SENAI Garopaba',
   quantidade: '3',
   data: '2025-06-10',
   responsavel: 'Higor',
@@ -31,6 +32,24 @@ describe('entradaSchema', () => {
   it('rejeita quantidades fracionadas ou negativas', () => {
     expect(entradaSchema.safeParse({ ...entradaValida, quantidade: '1.5' }).success).toBe(false);
     expect(entradaSchema.safeParse({ ...entradaValida, quantidade: '-2' }).success).toBe(false);
+  });
+});
+
+describe('descarteSchema', () => {
+  it('exige o motivo do descarte', () => {
+    const resultado = descarteSchema.safeParse({ item_id: 'x', quantidade: '1', data: '2025-06-10', responsavel: 'Higor', motivo: '' });
+    expect(resultado.success).toBe(false);
+    if (resultado.success) return;
+    expect(extrairErros(resultado.error).motivo).toBe('Selecione o motivo do descarte');
+  });
+});
+
+describe('usuários', () => {
+  it('valida o nome de usuário e a senha', () => {
+    const erros = novoUsuarioSchema.safeParse({ nome: 'Ana', usuario: 'ana paula', perfil: 'Operador', senha: '123' });
+    expect(erros.success).toBe(false);
+    if (erros.success) return;
+    expect(Object.keys(extrairErros(erros.error))).toEqual(['usuario', 'senha']);
   });
 });
 

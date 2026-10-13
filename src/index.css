@@ -1,56 +1,125 @@
+@import '@fontsource-variable/geist/wght.css';
+@import '@fontsource-variable/geist-mono/wght.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --fundo: 241 244 246; /* névoa */
+    --superficie: 255 255 255;
+    --linha: 222 228 232;
+    --texto: 15 42 51; /* tinta-petróleo #0F2A33 */
+    --suave: 94 110 118; /* ardósia */
+    --tinta: 15 42 51;
+    --brasa: 228 87 46; /* #E4572E: a única cor quente, reservada para ações */
+    --brasa-escura: 196 68 30;
+    --brasa-clara: 252 233 226;
+    --petroleo: 38 104 119; /* estoque */
+    --petroleo-clara: 223 238 241;
+    --vinho: 158 64 82; /* descartes e ações destrutivas */
+    --vinho-clara: 247 228 232;
+    --trigo: 166 112 14; /* alerta de estoque baixo */
+    --trigo-clara: 252 241 214;
+    color-scheme: light;
+  }
+
+  :root.dark {
+    --fundo: 10 22 27;
+    --superficie: 16 32 38;
+    --linha: 33 54 62;
+    --texto: 226 234 237;
+    --suave: 139 157 165;
+    --tinta: 7 17 21;
+    --brasa: 240 112 74;
+    --brasa-escura: 228 87 46;
+    --brasa-clara: 63 31 23;
+    --petroleo: 99 175 191;
+    --petroleo-clara: 18 50 58;
+    --vinho: 214 122 140;
+    --vinho-clara: 60 27 35;
+    --trigo: 228 176 78;
+    --trigo-clara: 56 42 14;
+    color-scheme: dark;
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
+    font-feature-settings: 'ss01', 'cv11';
   }
 
   body {
-    @apply bg-slate-50 font-sans text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-100;
+    @apply bg-fundo font-sans text-sm text-texto antialiased;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-orange-400 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+    @apply outline-none ring-2 ring-petroleo/60 ring-offset-1 ring-offset-superficie;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
 @layer components {
-  .card {
-    @apply rounded-2xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900;
+  /* Rótulo técnico: caixa-alta em fonte mono, para cabeçalhos de tabela e sobretítulos */
+  .rotulo-mono {
+    @apply font-mono text-rotulo font-medium uppercase text-suave;
+  }
+
+  .painel {
+    @apply rounded-xl border border-linha bg-superficie shadow-cartao;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-lg px-3.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
 
-  .btn-primary {
-    @apply btn bg-primary text-white hover:bg-primary-dark dark:bg-orange-500 dark:text-slate-950 dark:hover:bg-orange-400;
+  .btn-brasa {
+    @apply btn bg-brasa text-white shadow-sm hover:bg-brasa-escura dark:text-tinta dark:hover:text-white;
   }
 
-  .btn-secondary {
-    @apply btn border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700;
+  .btn-contorno {
+    @apply btn border border-linha bg-superficie text-texto shadow-sm hover:bg-fundo;
   }
 
-  .btn-danger {
-    @apply btn bg-rose-600 text-white hover:bg-rose-700;
+  .btn-perigo {
+    @apply btn bg-vinho text-white shadow-sm hover:opacity-90 dark:text-tinta;
   }
 
-  .btn-ghost {
-    @apply btn px-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100;
+  .btn-icone {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-md text-suave transition-colors hover:bg-fundo hover:text-texto;
   }
 
-  .label {
-    @apply mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300;
+  .rotulo {
+    @apply mb-1.5 block text-[13px] font-medium text-texto;
   }
 
-  .input {
-    @apply block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 transition-colors focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-400/30 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100;
+  .campo {
+    @apply block h-9 w-full rounded-lg border border-linha bg-superficie px-3 text-sm text-texto shadow-sm transition-colors placeholder:text-suave/70 focus:border-petroleo focus:outline-none focus:ring-2 focus:ring-petroleo/20;
   }
 
-  .input-erro {
-    @apply border-rose-400 focus:border-rose-400 focus:ring-rose-400/30;
+  textarea.campo {
+    @apply h-auto py-2;
+  }
+
+  .campo-erro {
+    @apply border-vinho focus:border-vinho focus:ring-vinho/20;
+  }
+
+  /* Tamanho exibido como etiqueta da peça */
+  .tag-tamanho {
+    @apply inline-flex h-[22px] min-w-[2rem] items-center justify-center rounded border border-linha bg-fundo px-1.5 font-mono text-xs font-medium;
+  }
+
+  .sku {
+    @apply font-mono text-xs text-suave;
   }
 
   .tabela {
@@ -58,14 +127,22 @@
   }
 
   .tabela th {
-    @apply whitespace-nowrap bg-slate-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800/60 dark:text-slate-400;
+    @apply rotulo-mono sticky top-0 z-10 whitespace-nowrap border-b border-linha bg-superficie px-4 py-2.5;
   }
 
   .tabela td {
-    @apply border-t border-slate-100 px-4 py-3 align-middle dark:border-slate-800;
+    @apply h-11 border-b border-linha/70 px-4 py-1.5 align-middle;
+  }
+
+  .tabela tbody tr:last-child td {
+    @apply border-b-0;
   }
 
   .tabela tbody tr {
-    @apply transition-colors hover:bg-slate-50/70 dark:hover:bg-slate-800/40;
+    @apply transition-colors hover:bg-fundo/70;
+  }
+
+  .numero {
+    @apply font-mono tabular-nums;
   }
 }

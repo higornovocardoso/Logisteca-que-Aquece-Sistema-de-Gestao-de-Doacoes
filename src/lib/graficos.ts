@@ -11,30 +11,31 @@ import {
   Tooltip,
 } from 'chart.js';
 
-ChartJS.register(
-  ArcElement,
-  BarElement,
-  CategoryScale,
-  Filler,
-  Legend,
-  LinearScale,
-  LineElement,
-  PointElement,
-  Tooltip,
-);
+ChartJS.register(ArcElement, BarElement, CategoryScale, Filler, Legend, LinearScale, LineElement, PointElement, Tooltip);
 
-ChartJS.defaults.font.family = 'Inter, system-ui, sans-serif';
+ChartJS.defaults.font.family = '"Geist Variable", system-ui, sans-serif';
+ChartJS.defaults.font.size = 12;
+ChartJS.defaults.plugins.tooltip.padding = 10;
+ChartJS.defaults.plugins.tooltip.cornerRadius = 6;
+ChartJS.defaults.plugins.tooltip.boxPadding = 4;
+ChartJS.defaults.plugins.tooltip.titleFont = { weight: 600 };
 
-export const CORES = {
-  entrada: '#2563eb',
-  saida: '#f97316',
-  paleta: ['#1a365d', '#2563eb', '#0ea5e9', '#14b8a6', '#22c55e', '#eab308', '#f97316', '#ef4444', '#ec4899', '#a855f7', '#64748b', '#78350f'],
-};
+/** Lê um token de cor do CSS (ex.: "brasa") como rgb(), com transparência opcional. */
+export function corDoToken(token: string, alfa = 1): string {
+  const valor = getComputedStyle(document.documentElement).getPropertyValue(`--${token}`).trim();
+  return alfa === 1 ? `rgb(${valor})` : `rgb(${valor} / ${alfa})`;
+}
 
-export function coresDoTema(escuro: boolean) {
+/** Cores usadas pelos gráficos; chame de novo quando o tema mudar. */
+export function paletaDosGraficos() {
   return {
-    texto: escuro ? '#94a3b8' : '#64748b',
-    grade: escuro ? 'rgba(148, 163, 184, 0.12)' : 'rgba(100, 116, 139, 0.12)',
-    borda: escuro ? '#0f172a' : '#ffffff',
+    distribuido: corDoToken('brasa'),
+    estoque: corDoToken('petroleo'),
+    descartado: corDoToken('vinho'),
+    entrada: corDoToken('petroleo'),
+    saida: corDoToken('brasa'),
+    texto: corDoToken('suave'),
+    grade: corDoToken('linha', 0.7),
+    tooltipFundo: corDoToken('tinta'),
   };
 }

@@ -16,25 +16,31 @@ describe('montarRelatorio', () => {
   });
 
   it('filtra por período e por tipo de movimentação', () => {
-    const filtros: FiltrosRelatorio = { ...base, inicio: '2025-07-01', fim: '2025-07-31', movimentacao: 'saida' };
+    const filtros: FiltrosRelatorio = { ...base, inicio: '2025-07-01', fim: '2025-07-31', movimentacao: 'descarte' };
     const relatorio = montarRelatorio(filtros, itens, movimentacoes);
-    const esperado = movs.filter((m) => m.tipo === 'saida' && m.data >= '2025-07-01' && m.data <= '2025-07-31');
+    const esperado = movs.filter((m) => m.tipo === 'descarte' && m.data >= '2025-07-01' && m.data <= '2025-07-31');
     expect(relatorio.linhas).toHaveLength(esperado.length);
-    expect(relatorio.linhas.every((linha) => linha[1] === 'Saída')).toBe(true);
+    expect(relatorio.linhas.every((linha) => linha[1] === 'Descarte')).toBe(true);
     expect(relatorio.subtitulo).toBe('Período: 01/07/2025 a 31/07/2025');
   });
 
-  it('resume arrecadação e distribuição por tipo de peça', () => {
+  it('resume arrecadado, distribuído e descartado por tipo de peça', () => {
     const relatorio = montarRelatorio({ ...base, tipo: 'resumo' }, itens, movimentacoes);
-    const arrecadadas = relatorio.linhas.reduce((t, linha) => t + (linha[1] as number), 0);
-    const distribuidas = relatorio.linhas.reduce((t, linha) => t + (linha[2] as number), 0);
-    expect(arrecadadas).toBe(somar(movs, 'entrada'));
-    expect(distribuidas).toBe(somar(movs, 'saida'));
+    const soma = (i: number) => relatorio.linhas.reduce((t, l) => t + (l[i] as number), 0);
+    expect(soma(1)).toBe(somar(movs, 'entrada'));
+    expect(soma(2)).toBe(somar(movs, 'saida'));
+    expect(soma(3)).toBe(somar(movs, 'descarte'));
   });
 
-  it('mostra o estoque atual com o saldo de cada item', () => {
+  it('mostra a posição de estoque com o saldo de cada item', () => {
     const relatorio = montarRelatorio({ ...base, tipo: 'estoque' }, itens, movimentacoes);
-    const saldo = relatorio.linhas.reduce((t, linha) => t + (linha[5] as number), 0);
-    expect(saldo).toBe(somar(movs, 'entrada') - somar(movs, 'saida'));
+    const saldo = relatorio.linhas.reduce((t, l) => t + (l[7] as number), 0);
+    expect(saldo).toBe(somar(movs, 'entrada') - somar(movs, 'saida') - somar(movs, 'descarte'));
+  });
+
+  it('agrupa as doações por fornecedor', () => {
+    const relatorio = montarRelatorio({ ...base, tipo: 'fornecedores' }, itens, movimentacoes);
+    expect(relatorio.linhas[0][0]).toBe('SENAI Garopaba');
+    expect(relatorio.linhas.reduce((t, l) => t + (l[2] as number), 0)).toBe(somar(movs, 'entrada'));
   });
 });

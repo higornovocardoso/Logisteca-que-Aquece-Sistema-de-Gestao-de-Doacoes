@@ -16,3 +16,9 @@ export function RotaProtegida() {
     </EstoqueProvider>
   );
 }
+
+/** Rotas exclusivas de administradores; os demais voltam ao painel. */
+export function RotaDeAdministrador() {
+  const { ehAdministrador } = useAuth();
+  return ehAdministrador ? <Outlet /> : <Navigate to="/" replace />;
+}

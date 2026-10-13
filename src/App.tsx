@@ -1,16 +1,16 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { RotaProtegida } from './components/RotaProtegida';
+import { RotaDeAdministrador, RotaProtegida } from './components/RotaProtegida';
 import { AuthProvider } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import './lib/graficos';
-import { Dashboard } from './pages/Dashboard';
-import { Entradas } from './pages/Entradas';
+import { Administracao } from './pages/Administracao';
 import { Estoque } from './pages/Estoque';
 import { Login } from './pages/Login';
+import { Movimentacoes } from './pages/Movimentacoes';
+import { Painel } from './pages/Painel';
 import { Relatorios } from './pages/Relatorios';
-import { Saidas } from './pages/Saidas';
 
 export function App() {
   return (
@@ -22,11 +22,15 @@ export function App() {
               <Route path="/login" element={<Login />} />
               <Route element={<RotaProtegida />}>
                 <Route element={<Layout />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="entradas" element={<Entradas />} />
-                  <Route path="saidas" element={<Saidas />} />
+                  <Route index element={<Painel />} />
+                  <Route path="entradas" element={<Movimentacoes key="entrada" tipo="entrada" />} />
+                  <Route path="saidas" element={<Movimentacoes key="saida" tipo="saida" />} />
+                  <Route path="descartes" element={<Movimentacoes key="descarte" tipo="descarte" />} />
                   <Route path="estoque" element={<Estoque />} />
                   <Route path="relatorios" element={<Relatorios />} />
+                  <Route element={<RotaDeAdministrador />}>
+                    <Route path="administracao" element={<Administracao />} />
+                  </Route>
                 </Route>
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />

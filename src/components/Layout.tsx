@@ -1,211 +1,384 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  BarChart3,
   Boxes,
-  FileBarChart,
-  Info,
+  ChevronDown,
   LayoutDashboard,
   LogOut,
   Menu,
   Moon,
   PackageMinus,
   PackagePlus,
+  Plus,
   RotateCcw,
+  Settings2,
   Sun,
+  Trash2,
   X,
+  type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEstoque } from '../contexts/EstoqueContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
-import { fonte } from '../data';
-import { Logo } from './Logo';
+import { servico } from '../data';
+import type { TipoMovimentacao } from '../lib/types';
+import { MarcaCabide } from './Logo';
+import { RegistroProvider, useRegistro } from './Registro';
 
-const NAVEGACAO = [
-  { para: '/', rotulo: 'Dashboard', icone: LayoutDashboard },
-  { para: '/entradas', rotulo: 'Entradas', icone: PackagePlus },
-  { para: '/saidas', rotulo: 'Saídas', icone: PackageMinus },
-  { para: '/estoque', rotulo: 'Estoque', icone: Boxes },
-  { para: '/relatorios', rotulo: 'Relatórios', icone: FileBarChart },
+interface ItemDeMenu {
+  para: string;
+  rotulo: string;
+  icone: LucideIcon;
+  somenteAdmin?: boolean;
+}
+
+const SECOES: Array<{ titulo: string; itens: ItemDeMenu[] }> = [
+  {
+    titulo: 'Operação',
+    itens: [
+      { para: '/', rotulo: 'Painel', icone: LayoutDashboard },
+      { para: '/entradas', rotulo: 'Entradas', icone: PackagePlus },
+      { para: '/saidas', rotulo: 'Saídas', icone: PackageMinus },
+      { para: '/descartes', rotulo: 'Descartes', icone: Trash2 },
+      { para: '/estoque', rotulo: 'Estoque', icone: Boxes },
+    ],
+  },
+  {
+    titulo: 'Gestão',
+    itens: [
+      { para: '/relatorios', rotulo: 'Relatórios', icone: BarChart3 },
+      { para: '/administracao', rotulo: 'Administração', icone: Settings2, somenteAdmin: true },
+    ],
+  },
 ];
 
-function Navegacao({ aoNavegar }: { aoNavegar?: () => void }) {
+const ATALHOS: Array<{ tipo: TipoMovimentacao; rotulo: string; tecla: string; icone: LucideIcon }> = [
+  { tipo: 'entrada', rotulo: 'Entrada', tecla: 'E', icone: PackagePlus },
+  { tipo: 'saida', rotulo: 'Saída', tecla: 'S', icone: PackageMinus },
+  { tipo: 'descarte', rotulo: 'Descarte', tecla: 'D', icone: Trash2 },
+];
+
+function useFecharAoClicarFora(aberto: boolean, fechar: () => void) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!aberto) return;
+    const aoClicar = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && fechar();
+    const aoTeclar = (e: KeyboardEvent) => e.key === 'Escape' && fechar();
+    document.addEventListener('mousedown', aoClicar);
+    document.addEventListener('keydown', aoTeclar);
+    return () => {
+      document.removeEventListener('mousedown', aoClicar);
+      document.removeEventListener('keydown', aoTeclar);
+    };
+  }, [aberto, fechar]);
+  return ref;
+}
+
+function MenuSuspenso({
+  aberto,
+  alinhamento = 'direita',
+  children,
+}: {
+  aberto: boolean;
+  alinhamento?: 'direita' | 'esquerda';
+  children: ReactNode;
+}) {
   return (
-    <nav className="flex flex-col gap-1" aria-label="Menu principal">
-      {NAVEGACAO.map(({ para, rotulo, icone: Icone }) => (
-        <NavLink
-          key={para}
-          to={para}
-          end={para === '/'}
-          onClick={aoNavegar}
-          className={({ isActive }) =>
-            `flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors ${
-              isActive
-                ? 'bg-white/10 text-white shadow-inner'
-                : 'text-blue-100/70 hover:bg-white/5 hover:text-white'
-            }`
-          }
+    <AnimatePresence>
+      {aberto && (
+        <motion.div
+          role="menu"
+          initial={{ opacity: 0, y: -4, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.12 }}
+          className={`absolute top-full z-40 mt-1.5 min-w-[13rem] rounded-lg border border-linha bg-superficie p-1 shadow-flutuante ${
+            alinhamento === 'direita' ? 'right-0 origin-top-right' : 'left-0 origin-top-left'
+          }`}
         >
-          <Icone className="h-5 w-5" />
-          {rotulo}
-        </NavLink>
+          {children}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function OpcaoDeMenu({ icone: Icone, children, atalho, aoClicar }: { icone: LucideIcon; children: ReactNode; atalho?: string; aoClicar(): void }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={aoClicar}
+      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm hover:bg-fundo"
+    >
+      <Icone className="h-4 w-4 text-suave" />
+      <span className="flex-1">{children}</span>
+      {atalho && <kbd className="rounded border border-linha px-1.5 font-mono text-[11px] text-suave">{atalho}</kbd>}
+    </button>
+  );
+}
+
+function Navegacao({ aoNavegar }: { aoNavegar?: () => void }) {
+  const { ehAdministrador } = useAuth();
+  return (
+    <nav className="flex flex-col gap-6" aria-label="Menu principal">
+      {SECOES.map((secao) => (
+        <div key={secao.titulo}>
+          <p className="mb-1.5 px-2.5 font-mono text-[10.5px] font-medium uppercase tracking-[0.08em] text-white/40">{secao.titulo}</p>
+          <ul className="flex flex-col gap-0.5">
+            {secao.itens
+              .filter((item) => !item.somenteAdmin || ehAdministrador)
+              .map(({ para, rotulo, icone: Icone }) => (
+                <li key={para}>
+                  <NavLink
+                    to={para}
+                    end={para === '/'}
+                    onClick={aoNavegar}
+                    className={({ isActive }) =>
+                      `group relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13.5px] transition-colors ${
+                        isActive ? 'bg-white/[0.08] font-medium text-white' : 'text-white/65 hover:bg-white/[0.05] hover:text-white'
+                      }`
+                    }
+                  >
+                    {({ isActive }) => (
+                      <>
+                        {isActive && <span className="absolute -left-3 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r bg-brasa" />}
+                        <Icone className={`h-4 w-4 ${isActive ? 'text-brasa' : ''}`} />
+                        {rotulo}
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              ))}
+          </ul>
+        </div>
       ))}
     </nav>
   );
 }
 
-function Rodape() {
-  const { sessao, sair } = useAuth();
+function BarraLateral({ aoNavegar }: { aoNavegar?: () => void }) {
   return (
-    <div className="mt-auto border-t border-white/10 pt-4">
-      <div className="flex items-center gap-3 px-1">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-bold text-white">
-          {sessao?.usuario.charAt(0).toUpperCase()}
+    <div className="flex h-full flex-col px-3 py-4 text-white">
+      <div className="mb-7 flex items-center gap-2.5 px-2.5">
+        <MarcaCabide className="h-7 w-7 text-white" />
+        <div className="leading-tight">
+          <p className="text-[14px] font-semibold tracking-tight">Logística que Aquece</p>
+          <p className="font-mono text-[10.5px] text-white/45">Campanha de agasalhos</p>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-white">{sessao?.usuario}</p>
-          <p className="text-xs text-blue-100/60">Conectado</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void sair()}
-          className="rounded-lg p-2 text-blue-100/70 transition-colors hover:bg-white/10 hover:text-white"
-          aria-label="Sair"
-          title="Sair"
-        >
-          <LogOut className="h-5 w-5" />
-        </button>
+      </div>
+      <Navegacao aoNavegar={aoNavegar} />
+      <div className="mt-auto space-y-1 px-2.5 pt-6 font-mono text-[10.5px] text-white/40">
+        <p className="flex items-center gap-1.5">
+          <span className={`h-1.5 w-1.5 rounded-full ${servico.modo === 'demo' ? 'bg-trigo' : 'bg-emerald-400'}`} />
+          {servico.modo === 'demo' ? 'Modo demonstração' : 'Conectado ao banco'}
+        </p>
+        <p>Rede Feminina de Garopaba · SENAI</p>
       </div>
     </div>
   );
 }
 
-function BotaoTema() {
-  const { tema, alternarTema } = useTheme();
+function BotaoRegistrar() {
+  const { abrir } = useRegistro();
+  const [aberto, setAberto] = useState(false);
+  const ref = useFecharAoClicarFora(aberto, () => setAberto(false));
+
+  // Atalhos de teclado E, S e D, fora de campos de texto
+  useEffect(() => {
+    const aoTeclar = (e: KeyboardEvent) => {
+      const alvo = e.target as HTMLElement;
+      if (e.ctrlKey || e.metaKey || e.altKey || alvo.closest('input, textarea, select, [role="dialog"]')) return;
+      const atalho = ATALHOS.find((a) => a.tecla.toLowerCase() === e.key.toLowerCase());
+      if (atalho) {
+        e.preventDefault();
+        abrir(atalho.tipo);
+      }
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [abrir]);
+
   return (
-    <button
-      type="button"
-      onClick={alternarTema}
-      className="btn-ghost"
-      aria-label={tema === 'claro' ? 'Ativar modo escuro' : 'Ativar modo claro'}
-      title={tema === 'claro' ? 'Modo escuro' : 'Modo claro'}
-    >
-      {tema === 'claro' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
-    </button>
+    <div ref={ref} className="relative">
+      <button type="button" className="btn-brasa pr-2.5" aria-haspopup="menu" aria-expanded={aberto} onClick={() => setAberto((v) => !v)}>
+        <Plus className="h-4 w-4" />
+        <span className="hidden sm:inline">Registrar</span>
+        <ChevronDown className="h-3.5 w-3.5 opacity-80" />
+      </button>
+      <MenuSuspenso aberto={aberto}>
+        {ATALHOS.map(({ tipo, rotulo, tecla, icone }) => (
+          <OpcaoDeMenu
+            key={tipo}
+            icone={icone}
+            atalho={tecla}
+            aoClicar={() => {
+              setAberto(false);
+              abrir(tipo);
+            }}
+          >
+            {rotulo}
+          </OpcaoDeMenu>
+        ))}
+      </MenuSuspenso>
+    </div>
   );
 }
 
-function AvisoDemonstracao() {
+function MenuDoUsuario() {
+  const { sessao, sair } = useAuth();
+  const { tema, alternarTema } = useTheme();
+  const [aberto, setAberto] = useState(false);
+  const ref = useFecharAoClicarFora(aberto, () => setAberto(false));
+  const iniciais = (sessao?.nome ?? '?')
+    .split(' ')
+    .slice(0, 2)
+    .map((parte) => parte.charAt(0).toUpperCase())
+    .join('');
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setAberto((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={aberto}
+        className="flex items-center gap-2.5 rounded-lg py-1 pl-1 pr-2 transition-colors hover:bg-fundo"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-tinta font-mono text-[11px] font-medium text-white dark:bg-petroleo-clara dark:text-petroleo">
+          {iniciais}
+        </span>
+        <span className="hidden text-left leading-tight md:block">
+          <span className="block text-[13px] font-medium">{sessao?.nome}</span>
+          <span className="block text-[11px] text-suave">{sessao?.perfil}</span>
+        </span>
+        <ChevronDown className="hidden h-3.5 w-3.5 text-suave md:block" />
+      </button>
+      <MenuSuspenso aberto={aberto}>
+        <div className="border-b border-linha px-2.5 pb-2 pt-1.5 md:hidden">
+          <p className="text-[13px] font-medium">{sessao?.nome}</p>
+          <p className="text-[11px] text-suave">{sessao?.perfil}</p>
+        </div>
+        <OpcaoDeMenu icone={tema === 'claro' ? Moon : Sun} aoClicar={alternarTema}>
+          {tema === 'claro' ? 'Tema escuro' : 'Tema claro'}
+        </OpcaoDeMenu>
+        <OpcaoDeMenu icone={LogOut} aoClicar={() => void sair()}>
+          Sair
+        </OpcaoDeMenu>
+      </MenuSuspenso>
+    </div>
+  );
+}
+
+function FaixaDemonstracao() {
+  const { ehAdministrador } = useAuth();
   const { restaurarDadosDeExemplo } = useEstoque();
   const { avisar } = useToast();
+  if (servico.modo !== 'demo') return null;
 
   async function restaurar() {
-    if (!restaurarDadosDeExemplo) return;
     if (!window.confirm('Descartar as alterações feitas neste navegador e restaurar os dados de exemplo?')) return;
     await restaurarDadosDeExemplo();
     avisar('Dados de exemplo restaurados.');
   }
 
   return (
-    <div className="flex flex-col gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-900 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200">
-      <p className="flex items-start gap-2">
-        <Info className="mt-px h-4 w-4 shrink-0" />
-        <span>
-          Modo demonstração: os dados são exemplos da campanha de inverno de 2025 e as alterações ficam salvas apenas
-          neste navegador.
-        </span>
-      </p>
-      <button
-        type="button"
-        onClick={() => void restaurar()}
-        className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-lg px-2 py-1 font-semibold hover:bg-amber-100 sm:self-auto dark:hover:bg-amber-500/10"
-      >
-        <RotateCcw className="h-3.5 w-3.5" />
-        Restaurar dados de exemplo
-      </button>
+    <div className="flex items-center justify-between gap-3 border-b border-trigo/25 bg-trigo-clara px-4 py-1.5 text-xs text-trigo sm:px-6 lg:px-8">
+      <span>
+        <strong className="font-semibold">Modo demonstração.</strong>{' '}
+        <span className="hidden sm:inline">Dados de exemplo da campanha de 2025, salvos apenas neste navegador.</span>
+      </span>
+      {ehAdministrador && (
+        <button type="button" onClick={() => void restaurar()} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline">
+          <RotateCcw className="h-3 w-3" />
+          Restaurar exemplo
+        </button>
+      )}
     </div>
   );
 }
+
+const TITULOS_DE_PAGINA: Record<string, string> = {
+  '/': 'Painel',
+  '/entradas': 'Entradas',
+  '/saidas': 'Saídas',
+  '/descartes': 'Descartes',
+  '/estoque': 'Estoque',
+  '/relatorios': 'Relatórios',
+  '/administracao': 'Administração',
+};
 
 export function Layout() {
   const [menuAberto, setMenuAberto] = useState(false);
   const location = useLocation();
 
-  useEffect(() => setMenuAberto(false), [location.pathname]);
+  useEffect(() => {
+    setMenuAberto(false);
+    document.title = `${TITULOS_DE_PAGINA[location.pathname] ?? 'Início'} · Logística que Aquece`;
+  }, [location.pathname]);
 
   return (
-    <div className="min-h-screen lg:pl-72">
-      {/* Menu lateral (desktop) */}
-      <aside className="fixed inset-y-0 left-0 hidden w-72 flex-col bg-primary p-5 text-white lg:flex dark:bg-slate-900 dark:ring-1 dark:ring-slate-800">
-        <div className="mb-8 px-1">
-          <Logo />
-        </div>
-        <Navegacao />
-        <Rodape />
-      </aside>
+    <RegistroProvider>
+      <div className="min-h-screen lg:pl-60">
+        <aside className="fixed inset-y-0 left-0 hidden w-60 bg-tinta lg:block">
+          <BarraLateral />
+        </aside>
 
-      {/* Menu lateral (celular) */}
-      <AnimatePresence>
-        {menuAberto && (
-          <div className="fixed inset-0 z-40 lg:hidden">
-            <motion.div
-              className="absolute inset-0 bg-slate-900/50"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMenuAberto(false)}
-            />
-            <motion.aside
-              className="absolute inset-y-0 left-0 flex w-72 flex-col bg-primary p-5 text-white dark:bg-slate-900"
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'tween', duration: 0.22 }}
-            >
-              <div className="mb-8 flex items-center justify-between px-1">
-                <Logo />
+        <AnimatePresence>
+          {menuAberto && (
+            <div className="fixed inset-0 z-50 lg:hidden">
+              <motion.div className="absolute inset-0 bg-tinta/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMenuAberto(false)} />
+              <motion.aside
+                className="absolute inset-y-0 left-0 w-64 bg-tinta"
+                initial={{ x: '-100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '-100%' }}
+                transition={{ type: 'tween', duration: 0.2 }}
+              >
                 <button
                   type="button"
                   onClick={() => setMenuAberto(false)}
-                  className="rounded-lg p-2 text-blue-100/70 hover:bg-white/10"
+                  className="absolute right-2 top-3.5 rounded-md p-1.5 text-white/60 hover:bg-white/10"
                   aria-label="Fechar menu"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
-              </div>
-              <Navegacao aoNavegar={() => setMenuAberto(false)} />
-              <Rodape />
-            </motion.aside>
+                <BarraLateral aoNavegar={() => setMenuAberto(false)} />
+              </motion.aside>
+            </div>
+          )}
+        </AnimatePresence>
+
+        <header className="sticky top-0 z-30 border-b border-linha bg-superficie/85 backdrop-blur-md">
+          <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center gap-2">
+              <button type="button" className="btn-icone lg:hidden" onClick={() => setMenuAberto(true)} aria-label="Abrir menu">
+                <Menu className="h-5 w-5" />
+              </button>
+              <p className="text-[13px] text-suave">
+                <span className="hidden sm:inline">Logística que Aquece</span>
+                <span className="mx-2 hidden text-linha sm:inline">/</span>
+                <span className="font-medium text-texto">{TITULOS_DE_PAGINA[location.pathname]}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <BotaoRegistrar />
+              <div className="mx-1 h-6 w-px bg-linha" />
+              <MenuDoUsuario />
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+          <FaixaDemonstracao />
+        </header>
 
-      <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-200/80 bg-white/80 px-4 py-3 backdrop-blur-md sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-950/80">
-        <div className="flex items-center gap-2 lg:hidden">
-          <button type="button" className="btn-ghost" onClick={() => setMenuAberto(true)} aria-label="Abrir menu">
-            <Menu className="h-5 w-5" />
-          </button>
-          <Logo compacto />
-        </div>
-        <p className="hidden text-sm text-slate-500 lg:block dark:text-slate-400">
-          Campanha de agasalhos · Rede Feminina de Garopaba
-        </p>
-        <BotaoTema />
-      </header>
-
-      {fonte.modo === 'demo' && <AvisoDemonstracao />}
-
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <Outlet />
-        </motion.div>
-      </main>
-    </div>
+        <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <motion.div key={location.pathname} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+            <Outlet />
+          </motion.div>
+        </main>
+      </div>
+    </RegistroProvider>
   );
 }

@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { fonte, type Sessao } from '../data';
+import { servico, type Sessao } from '../data';
 
 interface AuthContextValue {
   sessao: Sessao | null;
   carregando: boolean;
+  ehAdministrador: boolean;
   entrar(usuario: string, senha: string): Promise<void>;
   sair(): Promise<void>;
+  atualizarSessao(): Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -14,24 +16,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [carregando, setCarregando] = useState(true);
 
-  useEffect(() => {
-    fonte
-      .sessaoAtual()
-      .then(setSessao)
-      .catch(() => setSessao(null))
-      .finally(() => setCarregando(false));
+  const atualizarSessao = useCallback(async () => {
+    setSessao(await servico.sessaoAtual().catch(() => null));
   }, []);
 
+  useEffect(() => {
+    void atualizarSessao().finally(() => setCarregando(false));
+  }, [atualizarSessao]);
+
   const entrar = useCallback(async (usuario: string, senha: string) => {
-    setSessao(await fonte.entrar(usuario, senha));
+    setSessao(await servico.entrar(usuario, senha));
   }, []);
 
   const sair = useCallback(async () => {
-    await fonte.sair();
+    await servico.sair();
     setSessao(null);
   }, []);
 
-  const value = useMemo(() => ({ sessao, carregando, entrar, sair }), [sessao, carregando, entrar, sair]);
+  const value = useMemo(
+    () => ({ sessao, carregando, ehAdministrador: sessao?.perfil === 'Administrador', entrar, sair, atualizarSessao }),
+    [sessao, carregando, entrar, sair, atualizarSessao],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

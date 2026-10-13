@@ -1,46 +1,60 @@
-# 🧣 Logística que Aquece
+# Logística que Aquece
 
-Sistema web de gestão de doações criado para a campanha de agasalhos **Logística que Aquece**, promovida pelo **SENAI** com a **Rede Feminina de Garopaba (SC)** no inverno de 2025.
+Sistema de controle de estoque da campanha de agasalhos **Logística que Aquece**, promovida pelo **SENAI** com a **Rede Feminina de Garopaba (SC)** no inverno de 2025.
 
-O sistema registra as roupas arrecadadas, controla as retiradas para distribuição e mantém o estoque atualizado, com relatórios que dão transparência ao que foi recebido e doado. Foi o primeiro sistema que desenvolvi.
+O sistema registra as roupas recebidas como doação, controla o que sai para distribuição e o que é descartado na triagem, e mantém o estoque de cada peça sempre atualizado, com relatórios que dão transparência a todo o processo. Foi o primeiro sistema que desenvolvi.
 
-![Dashboard](docs/telas/dashboard.png)
+![Painel](docs/telas/painel.png)
 
-> **Sobre esta versão:** o código-fonte original se perdeu depois da campanha. Este repositório é uma **reconstrução fiel**, feita a partir da configuração original do projeto (dependências, Vite, Tailwind e TypeScript) e das funcionalidades do sistema que foi usado na campanha.
+> **Sobre esta versão:** o código original se perdeu depois da campanha. Este repositório é uma **reconstrução** feita a partir da configuração original do projeto, de capturas de tela do sistema usado na campanha e das funcionalidades que ele tinha, agora com melhorias e um visual novo.
 
-## ✨ Funcionalidades
+## Funcionalidades
 
-- **Login** de acesso ao sistema.
-- **Dashboard** com o total de peças arrecadadas, distribuídas e em estoque, além de gráficos de entradas e saídas por semana, estoque por tipo de peça e distribuição por público.
-- **Entradas:** registro das doações recebidas, com tipo da peça, tamanho, público, quantidade, data e responsável pelo recebimento.
-- **Saídas:** registro das retiradas, com item, quantidade, data e responsável. O sistema impede retirar mais peças do que há em estoque.
-- **Estoque:** saldo de cada peça calculado a partir das entradas e saídas, com filtros e alerta de estoque baixo ou esgotado.
-- **Relatórios** de movimentações, resumo por tipo de peça e estoque atual, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
-- **Modo claro e escuro** e layout responsivo para celular.
+**Operação**
+- **Entradas:** registro das doações por tipo de peça, tamanho, gênero, quantidade, fornecedor e responsável. A opção *Continuar registrando* agiliza o lançamento de várias peças em sequência na mesa de triagem.
+- **Saídas:** retiradas para distribuição, com responsável. O sistema impede retirar mais peças do que há em estoque.
+- **Descartes:** peças sem condições de uso, com o motivo (rasgada, manchada, com mofo…).
+- **Estoque:** saldo de cada item com código próprio (ex.: `CAS-F-M` = casaco feminino M), filtros, alertas de estoque baixo e esgotado, e atalhos para registrar a saída ou o descarte direto da linha.
+- **Registro rápido:** botão *Registrar* em todas as telas e atalhos de teclado <kbd>E</kbd>, <kbd>S</kbd> e <kbd>D</kbd>.
+
+**Gestão**
+- **Painel:** indicadores com tendência semanal, o destino de todas as peças arrecadadas (distribuídas, em estoque e descartadas), gráficos por tipo, gênero, fornecedor e motivo de descarte, estoque crítico e últimos registros.
+- **Relatórios:** movimentações, resumo por tipo de peça, posição de estoque e doações por fornecedor, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
+- **Administração:** usuários com perfil (*Administrador* ou *Operador*), registro de todas as atividades (quem fez o quê e quando), backup em JSON, importação de backup e limpeza dos dados para uma nova campanha.
+
+**Segurança**
+- Login com no máximo 5 tentativas a cada 15 minutos, com bloqueio temporário e contagem regressiva.
+- Senhas guardadas apenas como hash (PBKDF2 no modo demonstração e bcrypt no Supabase).
+- Permissões por perfil: operadores registram, administradores também excluem registros, gerenciam usuários e dados.
+- No Supabase, as regras ficam no próprio banco: políticas de acesso (RLS) e gatilhos que impedem estoque negativo e garantem a autoria do registro de atividades.
 
 | Estoque | Relatórios |
 | --- | --- |
 | ![Estoque](docs/telas/estoque.png) | ![Relatórios](docs/telas/relatorios.png) |
 
-| Login | Modo escuro |
+| Registro de entrada | Administração |
 | --- | --- |
-| ![Login](docs/telas/login.png) | ![Dashboard no modo escuro](docs/telas/dashboard-escuro.png) |
+| ![Registro de entrada](docs/telas/registro.png) | ![Administração](docs/telas/administracao.png) |
 
-<p align="center"><img src="docs/telas/celular.png" alt="Dashboard no celular" width="260"></p>
+| Tema escuro | Login |
+| --- | --- |
+| ![Painel no tema escuro](docs/telas/painel-escuro.png) | ![Login](docs/telas/login.png) |
 
-## 🛠️ Tecnologias
+<p align="center"><img src="docs/telas/celular.png" alt="Painel no celular" width="280"></p>
 
-| Camada           | Ferramentas                                                    |
-| ---------------- | -------------------------------------------------------------- |
-| Front-end        | React 18, TypeScript, Vite, React Router                       |
-| Estilização      | Tailwind CSS, Framer Motion, Lucide Icons                      |
-| Back-end / Dados | Supabase (PostgreSQL + autenticação)                           |
-| Gráficos         | Chart.js, react-chartjs-2                                      |
-| Relatórios       | jsPDF + jsPDF-AutoTable (PDF), SheetJS (Excel), PapaParse (CSV)|
-| Validação        | Zod                                                            |
-| Qualidade        | ESLint, TypeScript (`strict`), Vitest, GitHub Actions          |
+## Tecnologias
 
-## 🚀 Como rodar
+| Camada           | Ferramentas                                                      |
+| ---------------- | ---------------------------------------------------------------- |
+| Front-end        | React 18, TypeScript, Vite, React Router                         |
+| Interface        | Tailwind CSS, Framer Motion, Lucide Icons, fontes Geist          |
+| Back-end / dados | Supabase (PostgreSQL, Auth, RLS)                                 |
+| Gráficos         | Chart.js, react-chartjs-2                                        |
+| Relatórios       | jsPDF + AutoTable (PDF), SheetJS (Excel), PapaParse (CSV)        |
+| Validação        | Zod                                                              |
+| Qualidade        | ESLint, TypeScript (`strict`), Vitest, GitHub Actions            |
+
+## Como rodar
 
 Pré-requisito: [Node.js](https://nodejs.org/) 20 ou superior.
 
@@ -49,23 +63,27 @@ npm install
 npm run dev
 ```
 
-Acesse `http://localhost:5173` e entre com:
+Acesse `http://localhost:5173`.
 
-| Usuário     | Senha       |
-| ----------- | ----------- |
-| `Visitante` | `Visitante` |
+### Modo demonstração
 
-Sem configuração nenhuma, o sistema roda em **modo demonstração**, com dados de exemplo da campanha salvos no próprio navegador. O botão "Restaurar dados de exemplo" desfaz as alterações.
+Sem configurar nada, o sistema roda em **modo demonstração**, com os dados de exemplo da campanha salvos no próprio navegador:
 
-### Usando o Supabase (opcional)
+| Perfil        | Usuário     | Senha       |
+| ------------- | ----------- | ----------- |
+| Administrador | `Visitante` | `Visitante` |
+| Operador      | `Marlene`   | `Marlene`   |
 
-1. Crie um projeto no [Supabase](https://supabase.com/) e execute o script [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor. Ele cria as tabelas, a validação de estoque e as políticas de acesso.
-2. Em **Authentication › Users**, crie o usuário `visitante@logisticaqueaquece.local` com a senha desejada.
-3. Copie o `.env.example` para `.env` e preencha a URL e a chave `anon` do projeto.
+Em *Administração › Dados e backup*, o botão *Restaurar* desfaz as alterações.
 
-Com as variáveis preenchidas, o sistema passa a usar o banco de dados em vez do modo demonstração.
+### Com o Supabase
 
-## 📜 Scripts
+1. Crie um projeto no [Supabase](https://supabase.com/) e execute o script [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor.
+2. Em **Authentication › Users**, crie um usuário com o e-mail `seunome@logisticaqueaquece.local`. Em *User Metadata*, informe `{"nome": "Seu Nome", "perfil": "Administrador"}`.
+3. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`) do projeto.
+4. Entre no sistema usando só `seunome` como nome de usuário.
+
+## Scripts
 
 | Comando             | Descrição                                   |
 | ------------------- | ------------------------------------------- |
@@ -76,19 +94,19 @@ Com as variáveis preenchidas, o sistema passa a usar o banco de dados em vez do
 | `npm run lint`      | Análise estática com ESLint                 |
 | `npm run typecheck` | Verificação de tipos com TypeScript         |
 
-## 📁 Estrutura
+## Estrutura
 
 ```
 src/
-├── components/   # Layout, rota protegida, tabela de movimentações e componentes de interface
+├── components/   # Layout, formulários de registro, rotas protegidas e componentes de interface
 ├── contexts/     # Autenticação, estoque, tema e avisos
-├── data/         # Fontes de dados: Supabase e modo demonstração (com dados de exemplo)
-├── lib/          # Regras de estoque, validação, relatórios, gráficos e formatação
-└── pages/        # Login, Dashboard, Entradas, Saídas, Estoque e Relatórios
+├── data/         # Fontes de dados (Supabase e modo demonstração), serviço com registro de atividades
+├── lib/          # Regras de estoque, validação, relatórios, backup, limite de login e gráficos
+└── pages/        # Login, Painel, Entradas/Saídas/Descartes, Estoque, Relatórios e Administração
 supabase/
-└── schema.sql    # Tabelas, gatilho de validação de estoque e políticas de acesso
+└── schema.sql    # Tabelas, gatilhos, políticas de acesso (RLS) e funções de permissão
 ```
 
-## 👤 Autor
+## Autor
 
 **Higor Cardoso**: [GitHub](https://github.com/higornovocardoso)

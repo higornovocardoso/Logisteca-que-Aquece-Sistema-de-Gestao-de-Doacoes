@@ -36,18 +36,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           {avisos.map((aviso) => (
             <motion.div
               key={aviso.id}
-              role="status"
+              role={aviso.tipo === 'erro' ? 'alert' : 'status'}
               initial={{ opacity: 0, y: 16, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, x: 40 }}
-              className="pointer-events-auto flex max-w-sm items-start gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-lg dark:border-slate-700 dark:bg-slate-800"
+              className="pointer-events-auto flex max-w-sm items-start gap-2.5 rounded-lg border border-linha bg-superficie px-3.5 py-3 text-sm shadow-flutuante"
             >
               {aviso.tipo === 'sucesso' ? (
-                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-500" />
+                <CheckCircle2 className="mt-px h-[18px] w-[18px] shrink-0 text-petroleo" />
               ) : (
-                <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
+                <XCircle className="mt-px h-[18px] w-[18px] shrink-0 text-vinho" />
               )}
-              <span className="text-slate-700 dark:text-slate-200">{aviso.mensagem}</span>
+              <span>{aviso.mensagem}</span>
             </motion.div>
           ))}
         </AnimatePresence>

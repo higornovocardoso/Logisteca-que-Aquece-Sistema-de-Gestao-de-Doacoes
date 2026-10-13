@@ -1,34 +1,34 @@
 import type { Item, ItemComSaldo, Movimentacao, MovimentacaoDetalhada } from './types';
 
-/** Calcula entradas, saídas e saldo de cada item a partir das movimentações. */
+/** Entradas somam ao estoque; saídas e descartes subtraem. */
+export function efeitoNoEstoque(mov: Pick<Movimentacao, 'tipo' | 'quantidade'>): number {
+  return mov.tipo === 'entrada' ? mov.quantidade : -mov.quantidade;
+}
+
+/** Calcula entradas, saídas, descartes e saldo de cada item a partir das movimentações. */
 export function calcularSaldos(itens: Item[], movimentacoes: Movimentacao[]): ItemComSaldo[] {
-  const totais = new Map<string, { entradas: number; saidas: number }>();
+  const totais = new Map<string, { entradas: number; saidas: number; descartes: number }>();
 
   for (const mov of movimentacoes) {
-    const total = totais.get(mov.item_id) ?? { entradas: 0, saidas: 0 };
+    const total = totais.get(mov.item_id) ?? { entradas: 0, saidas: 0, descartes: 0 };
     if (mov.tipo === 'entrada') total.entradas += mov.quantidade;
-    else total.saidas += mov.quantidade;
+    else if (mov.tipo === 'saida') total.saidas += mov.quantidade;
+    else total.descartes += mov.quantidade;
     totais.set(mov.item_id, total);
   }
 
   return itens.map((item) => {
-    const { entradas, saidas } = totais.get(item.id) ?? { entradas: 0, saidas: 0 };
-    return { ...item, entradas, saidas, saldo: entradas - saidas };
+    const { entradas, saidas, descartes } = totais.get(item.id) ?? { entradas: 0, saidas: 0, descartes: 0 };
+    return { ...item, entradas, saidas, descartes, saldo: entradas - saidas - descartes };
   });
 }
 
 export function saldoDoItem(itemId: string, movimentacoes: Movimentacao[]): number {
-  return movimentacoes.reduce((saldo, mov) => {
-    if (mov.item_id !== itemId) return saldo;
-    return mov.tipo === 'entrada' ? saldo + mov.quantidade : saldo - mov.quantidade;
-  }, 0);
+  return movimentacoes.reduce((saldo, mov) => (mov.item_id === itemId ? saldo + efeitoNoEstoque(mov) : saldo), 0);
 }
 
 /** Junta cada movimentação ao seu item, da mais recente para a mais antiga. */
-export function detalharMovimentacoes(
-  itens: Item[],
-  movimentacoes: Movimentacao[],
-): MovimentacaoDetalhada[] {
+export function detalharMovimentacoes(itens: Item[], movimentacoes: Movimentacao[]): MovimentacaoDetalhada[] {
   const porId = new Map(itens.map((item) => [item.id, item]));
   return movimentacoes
     .flatMap((mov) => {
