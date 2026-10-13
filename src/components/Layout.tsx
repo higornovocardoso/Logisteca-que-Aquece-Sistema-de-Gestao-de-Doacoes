@@ -27,6 +27,7 @@ import { servico } from '../data';
 import type { TipoMovimentacao } from '../lib/types';
 import { MarcaCabide } from './Logo';
 import { RegistroProvider, useRegistro } from './Registro';
+import { Confirmacao } from './ui';
 
 interface ItemDeMenu {
   para: string;
@@ -277,12 +278,19 @@ function FaixaDemonstracao() {
   const { ehAdministrador } = useAuth();
   const { restaurarDadosDeExemplo } = useEstoque();
   const { avisar } = useToast();
+  const [confirmando, setConfirmando] = useState(false);
+  const [processando, setProcessando] = useState(false);
   if (servico.modo !== 'demo') return null;
 
   async function restaurar() {
-    if (!window.confirm('Descartar as alterações feitas neste navegador e restaurar os dados de exemplo?')) return;
-    await restaurarDadosDeExemplo();
-    avisar('Dados de exemplo restaurados.');
+    setProcessando(true);
+    try {
+      await restaurarDadosDeExemplo();
+      avisar('Dados de exemplo restaurados.');
+      setConfirmando(false);
+    } finally {
+      setProcessando(false);
+    }
   }
 
   return (
@@ -292,11 +300,20 @@ function FaixaDemonstracao() {
         <span className="hidden sm:inline">Dados de exemplo da campanha de 2025, salvos apenas neste navegador.</span>
       </span>
       {ehAdministrador && (
-        <button type="button" onClick={() => void restaurar()} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline">
+        <button type="button" onClick={() => setConfirmando(true)} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline">
           <RotateCcw className="h-3 w-3" />
           Restaurar exemplo
         </button>
       )}
+      <Confirmacao
+        aberto={confirmando}
+        titulo="Restaurar dados de exemplo"
+        mensagem="As alterações feitas neste navegador serão descartadas."
+        textoConfirmar="Restaurar"
+        processando={processando}
+        aoConfirmar={() => void restaurar()}
+        aoCancelar={() => setConfirmando(false)}
+      />
     </div>
   );
 }
@@ -352,7 +369,7 @@ export function Layout() {
           )}
         </AnimatePresence>
 
-        <header className="sticky top-0 z-30 border-b border-linha bg-superficie/85 backdrop-blur-md">
+        <header className="sticky top-[env(safe-area-inset-top,0px)] z-30 border-b border-linha bg-superficie/85 backdrop-blur-md">
           <div className="flex h-14 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2">
               <button type="button" className="btn-icone lg:hidden" onClick={() => setMenuAberto(true)} aria-label="Abrir menu">

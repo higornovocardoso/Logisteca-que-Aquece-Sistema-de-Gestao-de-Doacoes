@@ -11,6 +11,10 @@ const CHAVE_TEMA = 'logistica-que-aquece:tema';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function temaInicial(): Tema {
+  // Um tema definido pela página que incorpora o sistema tem prioridade
+  const definido = document.documentElement.dataset.theme;
+  if (definido === 'dark') return 'escuro';
+  if (definido === 'light') return 'claro';
   try {
     const salvo = localStorage.getItem(CHAVE_TEMA);
     if (salvo === 'claro' || salvo === 'escuro') return salvo;

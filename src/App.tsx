@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RotaDeAdministrador, RotaProtegida } from './components/RotaProtegida';
 import { AuthProvider } from './contexts/AuthContext';
@@ -12,12 +12,15 @@ import { Movimentacoes } from './pages/Movimentacoes';
 import { Painel } from './pages/Painel';
 import { Relatorios } from './pages/Relatorios';
 
+/** Em ambientes sem controle da URL (ex.: incorporado em outra página), a navegação fica em memória. */
+const Roteador = import.meta.env.VITE_ROTEADOR === 'memoria' ? MemoryRouter : BrowserRouter;
+
 export function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
-          <BrowserRouter>
+          <Roteador>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route element={<RotaProtegida />}>
@@ -35,7 +38,7 @@ export function App() {
               </Route>
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </BrowserRouter>
+          </Roteador>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
