@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { MarcaCabide } from '../components/Logo';
+import { LogoSenai } from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
 import { CONTAS_DEMO, LoginBloqueado, servico } from '../data';
 import { MAX_TENTATIVAS } from '../lib/limiteTentativas';
@@ -77,9 +77,7 @@ export function Login() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-fundo px-4 py-12">
       <motion.div className="w-full max-w-[380px]" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-tinta text-white shadow-flutuante dark:bg-superficie">
-            <MarcaCabide className="h-7 w-7" />
-          </span>
+          <LogoSenai className="h-10" />
           <h1 className="mt-5 text-xl font-semibold tracking-tight">Logística que Aquece</h1>
           <p className="mt-1 text-[13px] text-suave">Controle de estoque da campanha de agasalhos</p>
         </div>
