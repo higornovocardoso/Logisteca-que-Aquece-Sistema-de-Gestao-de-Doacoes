@@ -115,6 +115,7 @@ export function criarServico(
     async alterarUsuario(id, alteracao) {
       await fonte.alterarUsuario(id, alteracao);
       const partes = [
+        alteracao.usuario && `nome de usuário ${alteracao.usuario}`,
         alteracao.perfil && `perfil ${alteracao.perfil}`,
         alteracao.ativo === true && 'reativou',
         alteracao.ativo === false && 'desativou',

@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { z } from 'zod';
 import type { DadosEstoque } from '../data/fonte';
 import { saldoDoItem } from './estoque';
-import { GENEROS, MOTIVOS_DESCARTE, TAMANHOS, TIPOS_PECA } from './types';
+import { GENEROS, MOTIVOS_DESCARTE, TAMANHOS, TIPOS_PECA, tamanhoAtual } from './types';
 
 const VERSAO = 1;
 /** Um backup real da campanha tem poucas centenas de KB; acima disso o arquivo é rejeitado antes de ser lido. */
@@ -16,7 +16,8 @@ const texto = (min: number, max: number) => z.string().trim().min(min).max(max);
 const itemSchema = z.object({
   id,
   tipo: z.enum(TIPOS_PECA),
-  tamanho: z.enum(TAMANHOS),
+  // Backups anteriores à troca de tamanhos (numeração infantil, XG) são convertidos ao ler
+  tamanho: z.preprocess((valor) => (typeof valor === 'string' ? tamanhoAtual(valor) : valor), z.enum(TAMANHOS)),
   genero: z.enum(GENEROS),
   created_at: momento,
 });
@@ -68,12 +69,22 @@ export function lerBackup(conteudo: string): DadosEstoque {
   const resultado = backupSchema.safeParse(json);
   if (!resultado.success) throw new Error('O arquivo não é um backup válido do Logística que Aquece.');
 
-  const { itens, movimentacoes } = resultado.data;
-  const ids = new Set(itens.map((item) => item.id));
-  const combinacoes = new Set(itens.map((item) => `${item.tipo}|${item.tamanho}|${item.genero}`));
-  if (ids.size !== itens.length || combinacoes.size !== itens.length) {
+  const { itens: lidos, movimentacoes: movimentacoesLidas } = resultado.data;
+  if (new Set(lidos.map((item) => item.id)).size !== lidos.length) {
     throw new Error('O backup tem itens repetidos.');
   }
+  // Itens que viraram a mesma combinação na conversão de tamanhos (ex.: casaco 4 e 8 → Infantil) são unidos
+  const porCombinacao = new Map<string, (typeof lidos)[number]>();
+  const unidoA = new Map<string, string>();
+  for (const item of lidos) {
+    const chave = `${item.tipo}|${item.tamanho}|${item.genero}`;
+    const existente = porCombinacao.get(chave);
+    if (existente) unidoA.set(item.id, existente.id);
+    else porCombinacao.set(chave, item);
+  }
+  const itens = [...porCombinacao.values()];
+  const movimentacoes = movimentacoesLidas.map((mov) => (unidoA.has(mov.item_id) ? { ...mov, item_id: unidoA.get(mov.item_id)! } : mov));
+  const ids = new Set(itens.map((item) => item.id));
   if (new Set(movimentacoes.map((mov) => mov.id)).size !== movimentacoes.length) {
     throw new Error('O backup tem movimentações repetidas.');
   }

@@ -139,7 +139,9 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
       await gerenciarUsuarios({ acao: 'criar', ...novo });
     },
 
-    async alterarUsuario(id, { senha, ...alteracao }) {
+    async alterarUsuario(id, { senha, usuario, ...alteracao }) {
+      // O nome de usuário é o e-mail de login: a Edge Function troca os dois juntos
+      if (usuario) await gerenciarUsuarios({ acao: 'alterar_usuario', id, usuario });
       if (Object.keys(alteracao).length > 0) {
         const { error } = await supabase.from('perfis').update(alteracao).eq('id', id);
         falhar(error);

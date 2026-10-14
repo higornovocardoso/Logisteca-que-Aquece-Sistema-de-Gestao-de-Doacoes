@@ -2,7 +2,7 @@
 // Criar, remover, redefinir senha e trocar o nome de usuário exigem a chave de serviço do Supabase,
 // que só existe aqui, no servidor. Toda chamada confere quem pediu: administradores gerenciam qualquer
 // usuário; os demais só trocam o próprio nome de usuário, confirmando a senha.
-import { createClient } from 'npm:@supabase/supabase-js@2.50.0';
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2.50.0';
 
 const DOMINIO_USUARIOS = 'logisticaqueaquece.local';
 const PERFIS = ['Administrador', 'Operador'];
@@ -29,6 +29,23 @@ function resposta(status: number, corpo: Record<string, unknown>) {
 }
 
 const erro = (status: number, mensagem: string) => resposta(status, { erro: mensagem });
+
+const NOME_DE_USUARIO = /^[a-z0-9._-]{3,30}$/;
+
+/** Troca juntos o e-mail de login e o nome de usuário do perfil; se a segunda etapa falhar, desfaz a primeira. */
+async function trocarNomeDeUsuario(admin: SupabaseClient, id: string, emailAnterior: string, usuario: string) {
+  const { data: existente } = await admin.from('perfis').select('id').eq('usuario', usuario).neq('id', id).maybeSingle();
+  if (existente) return erro(409, `O nome de usuário "${usuario}" já está em uso.`);
+
+  const { error } = await admin.auth.admin.updateUserById(id, { email: `${usuario}@${DOMINIO_USUARIOS}`, email_confirm: true });
+  if (error) return falhaDoAuth('alterar o nome de usuário', error);
+  const perfil = await admin.from('perfis').update({ usuario }).eq('id', id);
+  if (perfil.error) {
+    await admin.auth.admin.updateUserById(id, { email: emailAnterior, email_confirm: true });
+    return falhaDoAuth('alterar o nome de usuário', perfil.error);
+  }
+  return resposta(200, { ok: true });
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cabecalhos });
@@ -59,7 +76,7 @@ Deno.serve(async (req) => {
   if (corpo.acao === 'alterar_meu_usuario') {
     const usuario = texto(corpo.usuario).toLowerCase();
     const senha = typeof corpo.senha === 'string' ? corpo.senha : '';
-    if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) {
+    if (!NOME_DE_USUARIO.test(usuario)) {
       return erro(400, 'O nome de usuário deve ter de 3 a 30 caracteres: letras, números, ponto, hífen ou sublinhado.');
     }
     if (usuario === solicitante.usuario) return resposta(200, { ok: true });
@@ -72,19 +89,7 @@ Deno.serve(async (req) => {
     if (conferencia.error) return erro(400, 'A senha atual está incorreta.');
     await publico.auth.signOut({ scope: 'local' }); // encerra só a sessão criada para a conferência
 
-    const { data: existente } = await admin.from('perfis').select('id').eq('usuario', usuario).maybeSingle();
-    if (existente) return erro(409, `O nome de usuário "${usuario}" já está em uso.`);
-
-    const emailAnterior = autenticado.user.email!;
-    const { error } = await admin.auth.admin.updateUserById(solicitante.id, { email: `${usuario}@${DOMINIO_USUARIOS}`, email_confirm: true });
-    if (error) return falhaDoAuth('alterar o nome de usuário', error);
-    const perfil = await admin.from('perfis').update({ usuario }).eq('id', solicitante.id);
-    if (perfil.error) {
-      // Mantém login e perfil sempre iguais: desfaz a troca do e-mail
-      await admin.auth.admin.updateUserById(solicitante.id, { email: emailAnterior, email_confirm: true });
-      return falhaDoAuth('alterar o nome de usuário', perfil.error);
-    }
-    return resposta(200, { ok: true });
+    return trocarNomeDeUsuario(admin, solicitante.id, autenticado.user.email!, usuario);
   }
 
   if (solicitante.perfil !== 'Administrador') {
@@ -121,6 +126,18 @@ Deno.serve(async (req) => {
       });
       if (error) return falhaDoAuth('criar o usuário', error);
       return resposta(200, { id: data.user.id });
+    }
+
+    case 'alterar_usuario': {
+      const id = texto(corpo.id);
+      const usuario = texto(corpo.usuario).toLowerCase();
+      if (!UUID.test(id)) return erro(400, 'Usuário não informado.');
+      if (!NOME_DE_USUARIO.test(usuario)) {
+        return erro(400, 'O nome de usuário deve ter de 3 a 30 caracteres: letras, números, ponto, hífen ou sublinhado.');
+      }
+      const { data: alvo } = await admin.auth.admin.getUserById(id);
+      if (!alvo.user?.email) return erro(404, 'Usuário não encontrado.');
+      return trocarNomeDeUsuario(admin, id, alvo.user.email, usuario);
     }
 
     case 'redefinir_senha': {

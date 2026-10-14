@@ -6,7 +6,7 @@ import { gerarAtividadesDeExemplo, gerarDadosDeExemplo, USUARIO_ADMINISTRADOR_EX
 
 const PREFIXO = 'logistica-que-aquece';
 const CHAVES = {
-  dados: `${PREFIXO}:dados:v2`,
+  dados: `${PREFIXO}:dados:v3`, // v3: tamanhos Infantil, PP, P, M, G e GG
   usuarios: `${PREFIXO}:usuarios:v2`,
   atividades: `${PREFIXO}:atividades:v2`,
   sessao: `${PREFIXO}:sessao:v2`,
@@ -274,6 +274,12 @@ export function criarFonteLocal(
       if (!alvo) throw new ErroDeNegocio('Usuário não encontrado.');
       if (id === eu.id && alteracao.ativo === false) throw new ErroDeNegocio('Você não pode desativar o próprio usuário.');
 
+      if (alteracao.usuario !== undefined && alteracao.usuario.toLowerCase() !== alvo.usuario.toLowerCase()) {
+        if (usuarios.some((u) => u.id !== id && u.usuario.toLowerCase() === alteracao.usuario!.toLowerCase())) {
+          throw new ErroDeNegocio(`O nome de usuário "${alteracao.usuario}" já está em uso.`);
+        }
+        alvo.usuario = alteracao.usuario;
+      }
       if (alteracao.nome !== undefined) alvo.nome = alteracao.nome;
       if (alteracao.perfil !== undefined) alvo.perfil = alteracao.perfil;
       if (alteracao.ativo !== undefined) alvo.ativo = alteracao.ativo;
@@ -282,7 +288,7 @@ export function criarFonteLocal(
       gravarUsuarios(usuarios);
 
       const sessao = sessaoSalva();
-      if (sessao?.id === id) store.gravar(CHAVES.sessao, { ...sessao, nome: alvo.nome, perfil: alvo.perfil });
+      if (sessao?.id === id) store.gravar(CHAVES.sessao, { ...sessao, nome: alvo.nome, usuario: alvo.usuario, perfil: alvo.perfil });
     },
 
     async removerUsuario(id) {

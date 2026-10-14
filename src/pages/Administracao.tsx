@@ -180,7 +180,13 @@ function Usuarios() {
                 editando === 'novo'
                   ? await executar(() => servico.criarUsuario(dados as never), `Usuário ${dados.usuario} criado.`)
                   : await executar(
-                      () => servico.alterarUsuario(editando.id, { nome: dados.nome, perfil: dados.perfil, senha: dados.senha || undefined }),
+                      () =>
+                        servico.alterarUsuario(editando.id, {
+                          nome: dados.nome,
+                          perfil: dados.perfil,
+                          senha: dados.senha || undefined,
+                          usuario: dados.usuario.trim().toLowerCase() !== editando.usuario.toLowerCase() ? dados.usuario.trim() : undefined,
+                        }),
                       'Alterações salvas.',
                     );
               if (ok) setEditando(null);
@@ -246,8 +252,11 @@ function FormularioUsuario({
         value={valores.usuario}
         onChange={alterar('usuario')}
         erro={erros.usuario}
-        disabled={!!usuario}
-        dica={usuario ? 'O nome de usuário não pode ser alterado.' : 'Usado para entrar no sistema. Sem espaços nem acentos.'}
+        dica={
+          usuario && valores.usuario.trim().toLowerCase() !== usuario.usuario.toLowerCase()
+            ? `A pessoa passa a entrar com "${valores.usuario.trim()}"; a senha continua a mesma.`
+            : 'Usado para entrar no sistema. Sem espaços nem acentos.'
+        }
         autoComplete="off"
         autoCapitalize="none"
       />

@@ -60,6 +60,7 @@ export const novoUsuarioSchema = z.object({
 
 export const edicaoUsuarioSchema = z.object({
   nome: nomePessoa('Informe o nome'),
+  usuario: nomeDeUsuario,
   perfil: escolha(PERFIS, 'Selecione o perfil'),
   senha: z.union([z.literal(''), senhaSchema]).optional(),
 });
