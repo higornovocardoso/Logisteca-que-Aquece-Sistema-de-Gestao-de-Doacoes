@@ -84,14 +84,10 @@ function Usuarios() {
             Administradores gerenciam usuários, dados e exclusões. Operadores registram entradas, saídas e descartes.
           </p>
         </div>
-        {servico.modo === 'demo' ? (
-          <button type="button" className="btn-brasa shrink-0" onClick={() => setEditando('novo')}>
-            <Plus className="h-4 w-4" />
-            Novo usuário
-          </button>
-        ) : (
-          <p className="max-w-xs text-xs text-suave">Novos usuários são criados no painel do Supabase, em Authentication › Users.</p>
-        )}
+        <button type="button" className="btn-brasa shrink-0" onClick={() => setEditando('novo')}>
+          <Plus className="h-4 w-4" />
+          Novo usuário
+        </button>
       </header>
 
       <div className="overflow-x-auto">
@@ -155,7 +151,7 @@ function Usuarios() {
                           <Power className="h-4 w-4" />
                         </button>
                       )}
-                      {!eu && servico.modo === 'demo' && (
+                      {!eu && (
                         <button type="button" className="btn-icone hover:text-vinho" title="Remover" aria-label={`Remover ${u.nome}`} onClick={() => setRemovendo(u)}>
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -260,17 +256,15 @@ function FormularioUsuario({
           <option key={p}>{p}</option>
         ))}
       </Selecao>
-      {(servico.modo === 'demo' || !usuario) && (
-        <Campo
-          rotulo={usuario ? 'Nova senha (opcional)' : 'Senha'}
-          type="password"
-          value={valores.senha}
-          onChange={alterar('senha')}
-          erro={erros.senha}
-          dica={usuario ? 'Deixe em branco para manter a senha atual.' : 'Mínimo de 6 caracteres.'}
-          autoComplete="new-password"
-        />
-      )}
+      <Campo
+        rotulo={usuario ? 'Nova senha (opcional)' : 'Senha'}
+        type="password"
+        value={valores.senha}
+        onChange={alterar('senha')}
+        erro={erros.senha}
+        dica={usuario ? 'Deixe em branco para manter a senha atual.' : 'Mínimo de 6 caracteres.'}
+        autoComplete="new-password"
+      />
       <div className="flex justify-end gap-2 border-t border-linha pt-4">
         <button type="button" className="btn-contorno" onClick={aoCancelar}>
           Cancelar

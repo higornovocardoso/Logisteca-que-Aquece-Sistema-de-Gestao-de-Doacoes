@@ -65,9 +65,12 @@ as $$
 $$;
 
 -- Impede ficar sem nenhum administrador ativo
+-- Os gatilhos rodam como dono porque também disparam em operações do serviço de Auth
+-- (ex.: ao excluir um usuário, o perfil é apagado em cascata).
 create function public.manter_um_administrador()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 begin
@@ -133,6 +136,7 @@ group by i.id;
 create function public.validar_estoque()
 returns trigger
 language plpgsql
+security definer
 set search_path = ''
 as $$
 declare
@@ -242,7 +246,9 @@ revoke execute on function privado.eh_administrador() from public, anon;
 grant execute on function privado.usuario_ativo() to authenticated;
 grant execute on function privado.eh_administrador() to authenticated;
 
--- Primeiro acesso: crie um usuário em Authentication › Users com o e-mail
+-- Primeiro acesso: crie o primeiro administrador em Authentication › Users com o e-mail
 --   seunome@logisticaqueaquece.local
 -- e, em "User Metadata", informe {"nome": "Seu Nome", "perfil": "Administrador"}.
--- No login do sistema, use apenas "seunome" como nome de usuário.
+-- No login do sistema, use apenas "seunome" como nome de usuário. Os demais usuários
+-- são criados pelo próprio sistema (Administração › Usuários), por meio da Edge Function
+-- supabase/functions/gerenciar-usuarios.
