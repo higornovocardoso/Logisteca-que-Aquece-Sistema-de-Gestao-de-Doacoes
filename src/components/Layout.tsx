@@ -166,10 +166,7 @@ function BarraLateral({ aoNavegar }: { aoNavegar?: () => void }) {
     <div className="flex h-full flex-col px-3 py-4 text-white">
       <div className="mb-7 flex flex-col gap-3 px-2.5">
         <LogoSenai className="h-6 self-start" />
-        <div className="leading-tight">
-          <p className="text-[14px] font-semibold tracking-tight">Logística que Aquece</p>
-          <p className="font-mono text-[10.5px] text-white/45">Campanha de agasalhos</p>
-        </div>
+        <p className="text-[14px] font-semibold leading-tight tracking-tight">Logística que Aquece</p>
       </div>
       <Navegacao aoNavegar={aoNavegar} />
     </div>
@@ -327,7 +324,7 @@ export function Layout() {
 
   useEffect(() => {
     setMenuAberto(false);
-    document.title = `${TITULOS_DE_PAGINA[location.pathname] ?? 'Início'} · Logística que Aquece`;
+    document.title = TITULOS_DE_PAGINA[location.pathname] ?? 'Início';
   }, [location.pathname]);
 
   return (
