@@ -13,9 +13,19 @@ export const TIPOS_PECA = [
   'Calçado',
 ] as const;
 
-export const TAMANHOS_ADULTO = ['PP', 'P', 'M', 'G', 'GG', 'XG'] as const;
-export const TAMANHOS_INFANTIL = ['2', '4', '6', '8', '10', '12', '14'] as const;
-export const TAMANHOS = [...TAMANHOS_ADULTO, ...TAMANHOS_INFANTIL, 'Único'] as const;
+/** Tamanhos das roupas, do menor ao maior; "Único" fica para os acessórios, que não têm tamanho. */
+export const TAMANHOS_ROUPA = ['Infantil', 'PP', 'P', 'M', 'G', 'GG'] as const;
+export const TAMANHOS = [...TAMANHOS_ROUPA, 'Único'] as const;
+
+/** Peças sem tamanho: ao escolher uma delas, o registro já preenche "Único". */
+export const TIPOS_SEM_TAMANHO: readonly string[] = ['Cobertor', 'Cachecol', 'Touca', 'Luva', 'Meia'];
+
+/** Tamanhos usados até 2025 (numeração infantil e XG), convertidos ao ler backups antigos. */
+export function tamanhoAtual(tamanho: string): string {
+  if (/^\d+$/.test(tamanho)) return 'Infantil';
+  if (tamanho === 'XG') return 'GG';
+  return tamanho;
+}
 
 export const GENEROS = ['Masculino', 'Feminino', 'Unissex'] as const;
 
@@ -113,6 +123,8 @@ export interface NovoUsuario {
 
 export interface AlteracaoUsuario {
   nome?: string;
+  /** Novo nome de usuário (login); só administradores alteram o de outras pessoas */
+  usuario?: string;
   perfil?: Perfil;
   ativo?: boolean;
   senha?: string;

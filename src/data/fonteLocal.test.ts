@@ -78,7 +78,7 @@ describe('fonte local (modo demonstração)', () => {
       const antes = await fonte.carregar();
       await fonte.registrarEntrada({ ...entrada, tipo: 'Casaco', tamanho: 'G', genero: 'Masculino' });
       expect((await fonte.carregar()).itens).toHaveLength(antes.itens.length);
-      await fonte.registrarEntrada({ ...entrada, tipo: 'Jaqueta', tamanho: '14', genero: 'Feminino' });
+      await fonte.registrarEntrada({ ...entrada, tipo: 'Jaqueta', tamanho: 'Infantil', genero: 'Feminino' });
       expect((await fonte.carregar()).itens).toHaveLength(antes.itens.length + 1);
     });
 
@@ -146,6 +146,17 @@ describe('fonte local (modo demonstração)', () => {
       await expect(fonte.alterarUsuario(eu.id, { perfil: 'Operador' })).rejects.toThrow('pelo menos um administrador');
       await expect(fonte.alterarUsuario(eu.id, { ativo: false })).rejects.toThrow('próprio');
       await expect(fonte.removerUsuario(eu.id)).rejects.toThrow('próprio');
+    });
+
+    it('administradores trocam o nome de usuário de outras pessoas', async () => {
+      await fonte.entrar('Visitante', 'Visitante');
+      const marlene = (await fonte.listarUsuarios()).find((u) => u.usuario === 'Marlene')!;
+      await expect(fonte.alterarUsuario(marlene.id, { usuario: 'visitante' })).rejects.toThrow('em uso');
+      await fonte.alterarUsuario(marlene.id, { usuario: 'marlene.souza' });
+      await fonte.sair();
+      await expect(fonte.entrar('Marlene', 'Marlene')).rejects.toThrow();
+      await expect(fonte.entrar('marlene.souza', 'Marlene')).resolves.toMatchObject({ nome: 'Marlene' });
+      await expect(fonte.alterarUsuario(marlene.id, { usuario: 'outra' })).rejects.toThrow('administradores');
     });
 
     it('redefine a senha de um usuário', async () => {

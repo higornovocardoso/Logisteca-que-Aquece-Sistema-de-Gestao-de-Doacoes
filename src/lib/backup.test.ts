@@ -29,12 +29,34 @@ describe('backup', () => {
     expect(() => lerBackup(comMovimentacao({ quantidade: 10001 }))).toThrow('backup válido');
     expect(() => lerBackup(comMovimentacao({ created_at: 'ontem' }))).toThrow('backup válido');
     expect(() => lerBackup(comMovimentacao({ id: entrada.id }))).toThrow('repetidas');
-    expect(() => lerBackup(gerarBackup({ ...dados, itens: [...dados.itens, { ...dados.itens[0], id: 'outro' }] }))).toThrow('repetidos');
+    expect(() => lerBackup(gerarBackup({ ...dados, itens: [...dados.itens, dados.itens[0]] }))).toThrow('repetidos');
   });
 
   it('aceita as datas no formato do Supabase', () => {
     const dados = gerarDadosDeExemplo();
     const comFuso = { ...dados, itens: dados.itens.map((item) => ({ ...item, created_at: '2025-06-01T12:30:00.123456+00:00' })) };
     expect(lerBackup(gerarBackup(comFuso)).itens).toHaveLength(dados.itens.length);
+  });
+
+  it('converte backups com os tamanhos antigos, unindo os itens que viram a mesma combinação', () => {
+    const momento = '2025-06-01T12:00:00.000Z';
+    const antigo = {
+      sistema: 'logistica-que-aquece',
+      versao: 1,
+      exportado_em: momento,
+      itens: [
+        { id: 'a', tipo: 'Casaco', tamanho: '4', genero: 'Unissex', created_at: momento },
+        { id: 'b', tipo: 'Casaco', tamanho: '8', genero: 'Unissex', created_at: momento },
+        { id: 'c', tipo: 'Jaqueta', tamanho: 'XG', genero: 'Masculino', created_at: momento },
+      ],
+      movimentacoes: [
+        { id: 'm1', item_id: 'a', tipo: 'entrada', quantidade: 3, data: '2025-06-01', responsavel: 'Ana', fornecedor: 'SENAI', motivo: null, observacao: null, created_at: momento },
+        { id: 'm2', item_id: 'b', tipo: 'entrada', quantidade: 2, data: '2025-06-01', responsavel: 'Ana', fornecedor: 'SENAI', motivo: null, observacao: null, created_at: momento },
+        { id: 'm3', item_id: 'b', tipo: 'saida', quantidade: 4, data: '2025-06-02', responsavel: 'Bia', fornecedor: null, motivo: null, observacao: null, created_at: momento },
+      ],
+    };
+    const { itens, movimentacoes } = lerBackup(JSON.stringify(antigo));
+    expect(itens.map((i) => `${i.id}:${i.tamanho}`)).toEqual(['a:Infantil', 'c:GG']);
+    expect(movimentacoes.every((m) => m.item_id === 'a')).toBe(true);
   });
 });

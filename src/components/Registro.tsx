@@ -8,8 +8,8 @@ import { codigoDoItem } from '../lib/sku';
 import {
   GENEROS,
   MOTIVOS_DESCARTE,
-  TAMANHOS_ADULTO,
-  TAMANHOS_INFANTIL,
+  TAMANHOS_ROUPA,
+  TIPOS_SEM_TAMANHO,
   TIPOS_PECA,
   type TipoMovimentacao,
 } from '../lib/types';
@@ -107,6 +107,15 @@ function FormularioEntrada({ aoConcluir }: { aoConcluir(): void }) {
 
   const alterar = (campo: keyof typeof inicial) => (e: { target: { value: string } }) =>
     setValores((v) => ({ ...v, [campo]: e.target.value }));
+  // Acessórios não têm tamanho: escolher um já preenche "Único"; voltar para uma roupa limpa o "Único"
+  const escolherTipo = (e: { target: { value: string } }) => {
+    const tipo = e.target.value;
+    setValores((v) => {
+      const semTamanho = TIPOS_SEM_TAMANHO.includes(tipo);
+      const tamanho = semTamanho ? 'Único' : v.tamanho === 'Único' ? '' : v.tamanho;
+      return { ...v, tipo, tamanho };
+    });
+  };
 
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
@@ -128,7 +137,7 @@ function FormularioEntrada({ aoConcluir }: { aoConcluir(): void }) {
 
   return (
     <form onSubmit={aoEnviar} noValidate className="grid gap-4 sm:grid-cols-2">
-      <Selecao rotulo="Tipo de peça" value={valores.tipo} onChange={alterar('tipo')} erro={erros.tipo}>
+      <Selecao rotulo="Tipo de peça" value={valores.tipo} onChange={escolherTipo} erro={erros.tipo}>
         <option value="">Selecione…</option>
         {TIPOS_PECA.map((t) => (
           <option key={t}>{t}</option>
@@ -136,17 +145,10 @@ function FormularioEntrada({ aoConcluir }: { aoConcluir(): void }) {
       </Selecao>
       <Selecao rotulo="Tamanho" value={valores.tamanho} onChange={alterar('tamanho')} erro={erros.tamanho}>
         <option value="">Selecione…</option>
-        <optgroup label="Adulto">
-          {TAMANHOS_ADULTO.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </optgroup>
-        <optgroup label="Infantil">
-          {TAMANHOS_INFANTIL.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </optgroup>
-        <option>Único</option>
+        {TAMANHOS_ROUPA.map((t) => (
+          <option key={t}>{t}</option>
+        ))}
+        <option value="Único">Único (acessórios)</option>
       </Selecao>
       <div className="sm:col-span-2">
         <Escolha rotulo="Gênero" opcoes={GENEROS} valor={valores.genero} aoEscolher={(genero) => setValores((v) => ({ ...v, genero }))} erro={erros.genero} />

@@ -17,6 +17,6 @@ const ABREVIACOES: Record<Item['tipo'], string> = {
 
 /** Código do item no formato TIPO-GÊNERO-TAMANHO, ex.: CAS-F-M (casaco feminino M). */
 export function codigoDoItem(item: Pick<Item, 'tipo' | 'genero' | 'tamanho'>): string {
-  const tamanho = item.tamanho === 'Único' ? 'UN' : /^\d+$/.test(item.tamanho) ? item.tamanho.padStart(2, '0') : item.tamanho;
+  const tamanho = item.tamanho === 'Único' ? 'UN' : item.tamanho === 'Infantil' ? 'INF' : item.tamanho;
   return `${ABREVIACOES[item.tipo]}-${item.genero.charAt(0)}-${tamanho}`;
 }

@@ -117,7 +117,7 @@ create trigger perfis_proteger_campos
 create table public.itens (
   id          uuid primary key default gen_random_uuid(),
   tipo        text not null check (tipo in ('Casaco', 'Jaqueta', 'Moletom', 'Blusa', 'Camiseta', 'Calça', 'Cobertor', 'Cachecol', 'Touca', 'Luva', 'Meia', 'Calçado')),
-  tamanho     text not null check (tamanho in ('PP', 'P', 'M', 'G', 'GG', 'XG', '2', '4', '6', '8', '10', '12', '14', 'Único')),
+  tamanho     text not null constraint itens_tamanho_check check (tamanho in ('Infantil', 'PP', 'P', 'M', 'G', 'GG', 'Único')),
   genero      text not null check (genero in ('Masculino', 'Feminino', 'Unissex')),
   created_at  timestamptz not null default now(),
   unique (tipo, tamanho, genero)
