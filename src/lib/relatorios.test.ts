@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gerarDadosDeExemplo } from '../data/seed';
+import { gerarDadosDeExemplo } from '../test/dadosDeExemplo';
 import { calcularSaldos, detalharMovimentacoes, somar } from './estoque';
 import { montarRelatorio, type FiltrosRelatorio } from './relatorios';
 

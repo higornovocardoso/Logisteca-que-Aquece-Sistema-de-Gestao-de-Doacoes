@@ -24,13 +24,8 @@ export interface Sessao {
   perfil: Perfil;
 }
 
-/**
- * Contrato comum às duas fontes de dados do sistema:
- * Supabase (produção) e armazenamento local do navegador (modo demonstração).
- */
+/** Contrato da fonte de dados do sistema (Supabase), separado da interface para facilitar os testes. */
 export interface FonteDeDados {
-  readonly modo: 'supabase' | 'demo';
-
   carregar(): Promise<DadosEstoque>;
   registrarEntrada(entrada: NovaEntrada): Promise<void>;
   registrarSaida(saida: NovaSaida): Promise<void>;
@@ -60,9 +55,6 @@ export interface FonteDeDados {
   listarAtividades(): Promise<Atividade[]>;
   /** Registra uma ação no histórico; sem `usuario`, usa quem está conectado. */
   registrarAtividade(acao: AcaoAtividade, descricao: string, usuario?: string): Promise<void>;
-
-  /** Só existe no modo demonstração: descarta as alterações e volta aos dados de exemplo. */
-  restaurarDadosDeExemplo?(): Promise<void>;
 }
 
 /** Erro esperado, com mensagem própria para mostrar ao usuário. */

@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { LogoSenai } from '../components/Logo';
 import { useAuth } from '../contexts/AuthContext';
-import { CONTAS_DEMO, LoginBloqueado, servico } from '../data';
+import { LoginBloqueado, servico } from '../data';
 import { MAX_TENTATIVAS } from '../lib/limiteTentativas';
 
 function formatarEspera(ms: number): string {
@@ -161,22 +161,6 @@ export function Login() {
             bloqueado temporariamente. Todas as ações ficam registradas.
           </p>
         </div>
-
-        {servico.modo === 'demo' && (
-          <div className="mt-5 rounded-lg border border-dashed border-linha px-4 py-3 text-xs">
-            <p className="rotulo-mono mb-2">Contas de demonstração</p>
-            <dl className="space-y-1">
-              {CONTAS_DEMO.map((conta) => (
-                <div key={conta.usuario} className="flex justify-between gap-3">
-                  <dt className="text-suave">{conta.perfil}</dt>
-                  <dd className="font-mono">
-                    {conta.usuario} / {conta.senha}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        )}
       </motion.div>
     </div>
   );

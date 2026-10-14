@@ -38,7 +38,6 @@ export function criarServico(
 
   return {
     ...fonte,
-    modo: fonte.modo,
 
     situacaoLogin: (usuario) => limitador.situacao(usuario),
 
@@ -143,11 +142,6 @@ export function criarServico(
       const anterior = (await fonte.sessaoAtual())?.usuario;
       await fonte.alterarMeuUsuario(novoUsuario, senhaAtual);
       await registrar('usuario_alterado', `Alterou o próprio nome de usuário de ${anterior ?? '?'} para ${novoUsuario}`);
-    },
-
-    async restaurarDadosDeExemplo() {
-      await fonte.restaurarDadosDeExemplo?.();
-      await registrar('backup_importado', 'Restaurou os dados de exemplo');
     },
   };
 }

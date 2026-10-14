@@ -28,7 +28,6 @@ Sistema que registra as roupas recebidas como doação, o que sai para distribui
 - [Estrutura do projeto](#estrutura-do-projeto)
 - [Como funciona](#como-funciona)
 - [Rodando localmente](#rodando-localmente)
-- [Conectando ao Supabase](#conectando-ao-supabase)
 - [Qualidade e automação](#qualidade-e-automação)
 - [Segurança](#segurança)
 - [Acessibilidade e desempenho](#acessibilidade-e-desempenho)
@@ -42,7 +41,6 @@ Sistema que registra as roupas recebidas como doação, o que sai para distribui
 - **Relatórios.** Movimentações, resumo por tipo de peça, posição de estoque e doações por fornecedor, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
 - **Administração.** Usuários com perfil (*Administrador* ou *Operador*), registro de tudo o que foi feito (quem, o quê e quando), backup em JSON e limpeza dos dados para uma nova campanha.
 - **Meu perfil.** Cada pessoa altera o próprio nome, o nome de usuário e a senha; o administrador também troca o nome de usuário de qualquer um.
-- **Dois modos.** Conectado ao Supabase em produção ou, sem configurar nada, em modo demonstração com os dados de exemplo da campanha salvos no navegador.
 
 ## Capturas de tela
 
@@ -91,12 +89,11 @@ Sistema que registra as roupas recebidas como doação, o que sai para distribui
 │   ├── pages/                  # Login, Painel, Entradas/Saídas/Descartes, Estoque, Relatórios, Administração
 │   ├── contexts/               # sessão, estoque, tema e avisos
 │   ├── data/
-│   │   ├── fonte.ts            # contrato comum às duas fontes de dados
-│   │   ├── fonteSupabase.ts    # produção: Supabase
-│   │   ├── fonteLocal.ts       # modo demonstração: navegador
-│   │   ├── servico.ts          # registro de atividades e limite de tentativas de login
-│   │   └── seed.ts             # dados de exemplo da campanha
-│   └── lib/                    # regras de estoque, validação, relatórios, backup e códigos dos itens
+│   │   ├── fonte.ts            # contrato da fonte de dados
+│   │   ├── fonteSupabase.ts    # acesso ao Supabase (banco, login e Edge Function)
+│   │   └── servico.ts          # registro de atividades e limite de tentativas de login
+│   ├── lib/                    # regras de estoque, validação, relatórios, backup e códigos dos itens
+│   └── test/                   # dados de exemplo da campanha, usados só pelos testes
 ├── supabase/
 │   ├── schema.sql              # tabelas, gatilhos e políticas de acesso (RLS)
 │   ├── functions/gerenciar-usuarios/  # Edge Function: criar, remover e renomear usuários, redefinir senha
@@ -108,18 +105,18 @@ Sistema que registra as roupas recebidas como doação, o que sai para distribui
 
 ## Como funciona
 
-### Duas fontes de dados, uma interface
+### Do navegador ao banco
 
 ```mermaid
 flowchart LR
     T[Telas] --> S[servico.ts<br/>atividades e limite de login]
-    S --> F{fonte de dados}
-    F -->|.env preenchido| SB[(Supabase<br/>PostgreSQL + RLS)]
-    F -->|sem .env| LS[(navegador<br/>modo demonstração)]
-    SB -.-> EF[Edge Function<br/>gerenciar-usuarios]
+    S --> F[fonteSupabase.ts]
+    F --> SB[(Supabase<br/>PostgreSQL + RLS)]
+    F --> EF[Edge Function<br/>gerenciar-usuarios]
+    EF --> SB
 ```
 
-As telas não sabem de onde vêm os dados: falam com um contrato único (`FonteDeDados`). Com as variáveis do Supabase preenchidas, tudo vai para o banco; sem elas, o sistema roda inteiro no navegador com os dados de exemplo da campanha. No meio, `servico.ts` registra cada ação no histórico e limita as tentativas de login.
+As telas falam com um contrato único (`FonteDeDados`), implementado sobre o Supabase. No meio, `servico.ts` registra cada ação no histórico e limita as tentativas de login. Tudo o que exige a chave de serviço (criar, remover e renomear usuários, redefinir senhas) passa pela Edge Function, que confere quem pediu antes de agir.
 
 ### O saldo nunca fica negativo
 
@@ -140,23 +137,26 @@ Cada linha vale também no banco, por políticas de RLS e gatilhos: esconder um 
 
 ## Rodando localmente
 
-Pré-requisito: [Node.js](https://nodejs.org) 20 ou mais novo.
+Pré-requisitos: [Node.js](https://nodejs.org) 20 ou mais novo e um projeto no [Supabase](https://supabase.com).
 
-```bash
-git clone https://github.com/higornovocardoso/Logisteca-que-Aquece.git
-cd Logisteca-que-Aquece
-npm install
-npm run dev             # abre em http://localhost:5173
-```
+1. Execute [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor do Supabase.
+2. Publique a Edge Function de usuários: `supabase functions deploy gerenciar-usuarios`. Ela usa a chave de serviço, que fica só no servidor.
+3. Em **Authentication › Sign In / Providers**, desative *Allow new users to sign up*: as contas são criadas apenas pelo sistema.
+4. Em **Authentication › Users**, crie o primeiro usuário com o e-mail `seunome@logisticaqueaquece.local` e libere-o como administrador no SQL Editor:
+   ```sql
+   update public.perfis set perfil = 'Administrador', ativo = true, nome = 'Seu Nome' where usuario = 'seunome';
+   ```
+5. Clone o projeto, configure o `.env` e rode:
+   ```bash
+   git clone https://github.com/higornovocardoso/Logisteca-que-Aquece.git
+   cd Logisteca-que-Aquece
+   cp .env.example .env    # preencha a URL e a chave pública (publishable ou anon)
+   npm install
+   npm run dev             # abre em http://localhost:5173
+   ```
+6. Entre usando só `seunome` como nome de usuário. As demais pessoas são cadastradas em *Administração › Usuários*.
 
-Sem configurar nada, o sistema abre em **modo demonstração**, com os dados de exemplo da campanha salvos no navegador:
-
-| Perfil | Usuário | Senha |
-| --- | --- | --- |
-| Administrador | `Visitante` | `Visitante` |
-| Operador | `Marlene` | `Marlene` |
-
-O botão *Restaurar exemplo* desfaz as alterações. O site publicado usa o banco de verdade, com acesso restrito à equipe.
+O `.env` não é versionado. Sem ele, o sistema mostra um aviso explicando o que configurar. Ao publicar na Vercel, cadastre as mesmas variáveis no painel do projeto e troque o endereço do Supabase na `Content-Security-Policy` do [`vercel.json`](vercel.json).
 
 | Comando | O que faz |
 | --- | --- |
@@ -165,20 +165,6 @@ O botão *Restaurar exemplo* desfaz as alterações. O site publicado usa o banc
 | `npm run preview` | Serve o build de produção |
 | `npm test` | Testes automatizados (Vitest) |
 | `npm run lint` | Análise estática (ESLint) |
-
-## Conectando ao Supabase
-
-1. Crie um projeto no [Supabase](https://supabase.com) e execute [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor.
-2. Publique a Edge Function de usuários: `supabase functions deploy gerenciar-usuarios`. Ela usa a chave de serviço, que fica só no servidor.
-3. Em **Authentication › Sign In / Providers**, desative *Allow new users to sign up*: as contas são criadas apenas pelo sistema.
-4. Em **Authentication › Users**, crie o primeiro usuário com o e-mail `seunome@logisticaqueaquece.local` e libere-o como administrador no SQL Editor:
-   ```sql
-   update public.perfis set perfil = 'Administrador', ativo = true, nome = 'Seu Nome' where usuario = 'seunome';
-   ```
-5. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`). O `.env` não é versionado.
-6. Entre usando só `seunome` como nome de usuário. As demais pessoas são cadastradas em *Administração › Usuários*.
-
-Ao publicar na Vercel, cadastre as mesmas variáveis no painel do projeto e troque o endereço do Supabase na `Content-Security-Policy` do [`vercel.json`](vercel.json).
 
 ## Qualidade e automação
 
@@ -194,19 +180,20 @@ flowchart LR
 
 Os testes (`src/**/*.test.ts`) conferem, entre outras coisas, que:
 
-- o saldo é calculado certo e saídas acima do estoque são recusadas;
-- operadores não excluem registros nem administram usuários;
-- senhas nunca ficam guardadas em texto puro e o login bloqueia após 5 tentativas;
-- trocar nome, nome de usuário e senha funciona e exige a senha atual;
+- o saldo de cada item é calculado certo a partir das entradas, saídas e descartes;
+- o login avisa quantas tentativas restam, bloqueia após 5 erros e cada ação vai para o histórico;
+- os formulários recusam dados inválidos, como quantidades fracionadas, descarte sem motivo e senhas que não conferem;
 - backups adulterados são recusados antes de apagar qualquer dado, e backups antigos são convertidos para os tamanhos atuais;
-- relatórios, códigos dos itens e validações dos formulários dão o resultado esperado.
+- relatórios e códigos dos itens dão o resultado esperado.
+
+As regras de permissão e de estoque também são garantidas pelo próprio banco (RLS e gatilhos) e foram testadas direto no Supabase, simulando operadores, usuários desativados e acessos sem login.
 
 ## Segurança
 
 O sistema passou por uma rodada de testes de ataque contra o banco, a Edge Function e a interface. O que ficou valendo:
 
 - **Regras no banco.** Políticas de RLS em todas as tabelas, funções de permissão em um schema que a API não expõe e gatilhos que impedem estoque negativo, mudança do próprio perfil de acesso e registros em nome de outra pessoa ou com data retroativa.
-- **Contas.** Só o sistema cria contas: quem se cadastrar por fora fica sem acesso até um administrador liberar. Senhas com no mínimo 8 caracteres, guardadas com bcrypt no Supabase (PBKDF2 no modo demonstração).
+- **Contas.** Só o sistema cria contas: quem se cadastrar por fora fica sem acesso até um administrador liberar. Senhas com no mínimo 8 caracteres, guardadas com bcrypt pelo Supabase.
 - **Login.** Até 5 tentativas a cada 15 minutos na tela, além do limite do próprio Supabase.
 - **Exportações e backups.** O CSV neutraliza fórmulas de planilha, e backups são validados com as mesmas regras do banco antes de qualquer alteração.
 - **Site.** Cabeçalhos em [`vercel.json`](vercel.json): `Content-Security-Policy`, HSTS, `Permissions-Policy`, `X-Frame-Options` e `nosniff`. Nenhum segredo vai para o navegador; a chave de serviço existe só dentro da Edge Function.

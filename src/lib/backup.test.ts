@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gerarDadosDeExemplo } from '../data/seed';
+import { gerarDadosDeExemplo } from '../test/dadosDeExemplo';
 import { gerarBackup, lerBackup } from './backup';
 
 describe('backup', () => {

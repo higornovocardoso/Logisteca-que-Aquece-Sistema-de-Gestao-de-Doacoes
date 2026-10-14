@@ -1,5 +1,5 @@
 import { MotionConfig } from 'framer-motion';
-import { BrowserRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { RotaDeAdministrador, RotaProtegida } from './components/RotaProtegida';
 import { AuthProvider } from './contexts/AuthContext';
@@ -8,9 +8,6 @@ import { ToastProvider } from './contexts/ToastContext';
 import { Login } from './pages/Login';
 import { Administracao, Estoque, Movimentacoes, Painel, Relatorios } from './paginas';
 
-/** Em ambientes sem controle da URL (ex.: incorporado em outra página), a navegação fica em memória. */
-const Roteador = import.meta.env.VITE_ROTEADOR === 'memoria' ? MemoryRouter : BrowserRouter;
-
 export function App() {
   return (
     // Animações seguem a preferência do sistema por movimento reduzido
@@ -18,7 +15,7 @@ export function App() {
       <ThemeProvider>
         <ToastProvider>
           <AuthProvider>
-            <Roteador>
+            <BrowserRouter>
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route element={<RotaProtegida />}>
@@ -36,7 +33,7 @@ export function App() {
                 </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
-            </Roteador>
+            </BrowserRouter>
           </AuthProvider>
         </ToastProvider>
       </ThemeProvider>

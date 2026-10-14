@@ -10,7 +10,6 @@ import {
   PackageMinus,
   PackagePlus,
   Plus,
-  RotateCcw,
   Settings2,
   Sun,
   Trash2,
@@ -21,16 +20,13 @@ import {
 import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useEstoque } from '../contexts/EstoqueContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { useToast } from '../contexts/ToastContext';
-import { servico } from '../data';
 import type { TipoMovimentacao } from '../lib/types';
 import { preCarregar } from '../paginas';
 import { LogoSenai } from './Logo';
 import { MeuPerfil } from './MeuPerfil';
 import { RegistroProvider, useRegistro } from './Registro';
-import { Confirmacao, Esqueleto } from './ui';
+import { Esqueleto } from './ui';
 
 interface ItemDeMenu {
   para: string;
@@ -290,50 +286,6 @@ function MenuDoUsuario() {
   );
 }
 
-function FaixaDemonstracao() {
-  const { ehAdministrador } = useAuth();
-  const { restaurarDadosDeExemplo } = useEstoque();
-  const { avisar } = useToast();
-  const [confirmando, setConfirmando] = useState(false);
-  const [processando, setProcessando] = useState(false);
-  if (servico.modo !== 'demo') return null;
-
-  async function restaurar() {
-    setProcessando(true);
-    try {
-      await restaurarDadosDeExemplo();
-      avisar('Dados de exemplo restaurados.');
-      setConfirmando(false);
-    } finally {
-      setProcessando(false);
-    }
-  }
-
-  return (
-    <div className="flex items-center justify-between gap-3 border-b border-trigo/25 bg-trigo-clara px-4 py-1.5 text-xs text-trigo sm:px-6 lg:px-8">
-      <span>
-        <strong className="font-semibold">Modo demonstração.</strong>{' '}
-        <span className="hidden sm:inline">Dados de exemplo da campanha de 2025, salvos apenas neste navegador.</span>
-      </span>
-      {ehAdministrador && (
-        <button type="button" onClick={() => setConfirmando(true)} className="inline-flex shrink-0 items-center gap-1 font-semibold hover:underline">
-          <RotateCcw className="h-3 w-3" />
-          Restaurar exemplo
-        </button>
-      )}
-      <Confirmacao
-        aberto={confirmando}
-        titulo="Restaurar dados de exemplo"
-        mensagem="As alterações feitas neste navegador serão descartadas."
-        textoConfirmar="Restaurar"
-        processando={processando}
-        aoConfirmar={() => void restaurar()}
-        aoCancelar={() => setConfirmando(false)}
-      />
-    </div>
-  );
-}
-
 const TITULOS_DE_PAGINA: Record<string, string> = {
   '/': 'Painel',
   '/entradas': 'Entradas',
@@ -410,7 +362,6 @@ export function Layout() {
               <MenuDoUsuario />
             </div>
           </div>
-          <FaixaDemonstracao />
         </header>
 
         <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

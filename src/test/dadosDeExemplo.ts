@@ -1,5 +1,7 @@
 import { addDays, format } from 'date-fns';
-import { descreverItem, type Atividade, type Genero, type Item, type MotivoDescarte, type Movimentacao, type Tamanho, type TipoPeca } from '../lib/types';
+import { type Genero, type Item, type MotivoDescarte, type Movimentacao, type Tamanho, type TipoPeca } from '../lib/types';
+
+// Dados de exemplo da campanha, usados pelos testes automatizados.
 
 /** Gerador pseudoaleatório determinístico, para os dados de exemplo serem sempre os mesmos. */
 function criarAleatorio(semente: number) {
@@ -56,8 +58,6 @@ const DESTINOS = [
   null,
 ];
 const MOTIVOS: MotivoDescarte[] = ['Rasgado ou danificado', 'Manchado', 'Mofo ou mau cheiro', 'Impróprio para uso'];
-
-export const USUARIO_ADMINISTRADOR_EXEMPLO = 'Higor';
 
 export function gerarDadosDeExemplo(): { itens: Item[]; movimentacoes: Movimentacao[] } {
   const aleatorio = criarAleatorio(2025);
@@ -164,16 +164,3 @@ export function gerarDadosDeExemplo(): { itens: Item[]; movimentacoes: Movimenta
 }
 
 /** Histórico de atividades correspondente aos dados de exemplo. */
-export function gerarAtividadesDeExemplo(itens: Item[], movimentacoes: Movimentacao[]): Atividade[] {
-  const porId = new Map(itens.map((item) => [item.id, item]));
-  const verbos = { entrada: 'Registrou entrada', saida: 'Registrou saída', descarte: 'Registrou descarte' };
-  return movimentacoes
-    .map((mov) => ({
-      id: `atv-${mov.id}`,
-      momento: mov.created_at,
-      usuario: USUARIO_ADMINISTRADOR_EXEMPLO,
-      acao: mov.tipo,
-      descricao: `${verbos[mov.tipo]} de ${mov.quantidade} peça(s): ${descreverItem(porId.get(mov.item_id)!)}`,
-    }))
-    .reverse();
-}

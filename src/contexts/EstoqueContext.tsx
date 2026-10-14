@@ -16,7 +16,6 @@ interface EstoqueContextValue {
   excluirMovimentacao(id: string): Promise<void>;
   limparDados(): Promise<void>;
   importarDados(dados: DadosEstoque): Promise<void>;
-  restaurarDadosDeExemplo(): Promise<void>;
 }
 
 const EstoqueContext = createContext<EstoqueContextValue | null>(null);
@@ -64,10 +63,6 @@ export function EstoqueProvider({ children }: { children: ReactNode }) {
         await recarregar();
       },
       importarDados: comRecarga((novos: DadosEstoque) => servico.importarDados(novos)),
-      restaurarDadosDeExemplo: async () => {
-        await servico.restaurarDadosDeExemplo?.();
-        await recarregar();
-      },
     };
   }, [dados, carregando, erro, recarregar]);
 

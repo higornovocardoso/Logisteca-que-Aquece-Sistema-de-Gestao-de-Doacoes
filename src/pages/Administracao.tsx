@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { AlertTriangle, Download, History, KeyRound, Loader2, Pencil, Plus, Power, RotateCcw, Search, Trash2, Upload, UserRound } from 'lucide-react';
+import { AlertTriangle, Download, History, KeyRound, Loader2, Pencil, Plus, Power, Search, Trash2, Upload, UserRound } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Abas, CabecalhoPagina, Campo, Carregando, Confirmacao, EstadoVazio, Modal, Selecao, Selo } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
@@ -461,12 +461,11 @@ function CartaoDeAcao({ titulo, descricao, children, perigo = false }: { titulo:
 const CONFIRMACAO_LIMPEZA = 'LIMPAR';
 
 function Dados() {
-  const { dados, itens, movimentacoes, limparDados, importarDados, restaurarDadosDeExemplo } = useEstoque();
+  const { dados, itens, movimentacoes, limparDados, importarDados } = useEstoque();
   const { avisar } = useToast();
   const arquivo = useRef<HTMLInputElement>(null);
   const [importando, setImportando] = useState<DadosEstoque | null>(null);
   const [limpando, setLimpando] = useState(false);
-  const [restaurando, setRestaurando] = useState(false);
   const [textoConfirmacao, setTextoConfirmacao] = useState('');
   const [processando, setProcessando] = useState(false);
 
@@ -537,14 +536,6 @@ function Dados() {
             Escolher arquivo
           </label>
         </CartaoDeAcao>
-        {servico.modo === 'demo' && (
-          <CartaoDeAcao titulo="Restaurar dados de exemplo" descricao="Volta aos dados da campanha de inverno de 2025 e descarta as alterações feitas neste navegador.">
-            <button type="button" className="btn-contorno" onClick={() => setRestaurando(true)}>
-              <RotateCcw className="h-4 w-4" />
-              Restaurar
-            </button>
-          </CartaoDeAcao>
-        )}
         <CartaoDeAcao perigo titulo="Limpar todos os dados" descricao="Apaga todos os itens e movimentações para começar uma nova campanha. Usuários e registro de atividades são mantidos.">
           <button type="button" className="btn-perigo" onClick={() => setLimpando(true)}>
             <Trash2 className="h-4 w-4" />
@@ -569,16 +560,6 @@ function Dados() {
         }
         aoCancelar={() => setImportando(null)}
         aoConfirmar={() => void executar(() => importarDados(importando!), 'Backup importado.').then((ok) => ok && setImportando(null))}
-      />
-
-      <Confirmacao
-        aberto={restaurando}
-        titulo="Restaurar dados de exemplo"
-        textoConfirmar="Restaurar"
-        processando={processando}
-        mensagem="As alterações feitas neste navegador serão descartadas."
-        aoCancelar={() => setRestaurando(false)}
-        aoConfirmar={() => void executar(restaurarDadosDeExemplo, 'Dados de exemplo restaurados.').then((ok) => ok && setRestaurando(false))}
       />
 
       <Modal aberto={limpando} titulo="Limpar todos os dados" aoFechar={() => setLimpando(false)} largura="max-w-md">

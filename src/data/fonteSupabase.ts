@@ -46,8 +46,6 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
   };
 
   return {
-    modo: 'supabase',
-
     async carregar() {
       const [itens, movimentacoes] = await Promise.all([
         supabase.from('itens').select('*').order('tipo'),
@@ -91,7 +89,7 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
 
     async importarDados(dados) {
       await this.limparDados();
-      // Os ids do backup podem não ser UUIDs (ex.: backups do modo demonstração): gera novos e remapeia.
+      // Os ids do backup podem não ser UUIDs (ex.: backups de versões antigas): gera novos e remapeia.
       const novosIds = new Map(dados.itens.map((item) => [item.id, crypto.randomUUID()]));
       falhar(
         (
