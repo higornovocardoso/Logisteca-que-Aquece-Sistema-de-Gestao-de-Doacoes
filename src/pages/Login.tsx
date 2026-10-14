@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
 import { Eye, EyeOff, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -25,6 +25,12 @@ export function Login() {
   const [enviando, setEnviando] = useState(false);
   const [liberaEm, setLiberaEm] = useState<number | null>(null);
   const [agora, setAgora] = useState(Date.now());
+  const cartao = useAnimationControls();
+  // Um leve "não" com a cabeça quando o acesso é recusado
+  const recusar = (mensagem: string) => {
+    setErro(mensagem);
+    void cartao.start({ x: [0, -7, 6, -4, 3, 0], transition: { duration: 0.38 } });
+  };
 
   useEffect(() => {
     document.title = 'Entrar';
@@ -49,7 +55,7 @@ export function Login() {
   async function aoEnviar(e: FormEvent) {
     e.preventDefault();
     if (!usuario.trim() || !senha) {
-      setErro('Informe o nome de usuário e a senha.');
+      recusar('Informe o nome de usuário e a senha.');
       return;
     }
     const situacao = servico.situacaoLogin(usuario);
@@ -69,7 +75,7 @@ export function Login() {
         setLiberaEm(e.liberaEm);
         setAgora(Date.now());
       } else {
-        setErro(e instanceof Error ? e.message : 'Não foi possível entrar.');
+        recusar(e instanceof Error ? e.message : 'Não foi possível entrar.');
       }
       setSenha('');
     } finally {
@@ -82,9 +88,10 @@ export function Login() {
       <motion.div className="w-full max-w-[380px]" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="mb-8 flex flex-col items-center text-center">
           <LogoSenai className="h-10" />
-          <h1 className="mt-5 text-xl font-semibold tracking-tight">Logística que Aquece</h1>        </div>
+          <h1 className="mt-5 text-xl font-semibold tracking-tight">Logística que Aquece</h1>
+        </div>
 
-        <div className="painel p-6">
+        <motion.div className="painel p-6" animate={cartao}>
           <form onSubmit={aoEnviar} className="space-y-4" noValidate>
             <div>
               <label htmlFor="usuario" className="rotulo">
@@ -145,7 +152,7 @@ export function Login() {
               Entrar
             </button>
           </form>
-        </div>
+        </motion.div>
 
         <div className="mt-5 flex items-start gap-2.5 px-1 text-xs text-suave">
           <ShieldCheck className="mt-px h-4 w-4 shrink-0" />

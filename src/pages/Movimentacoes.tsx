@@ -1,7 +1,7 @@
 import { Download, PackageMinus, PackagePlus, Plus, Search, Trash2, X, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useRegistro } from '../components/Registro';
-import { CabecalhoPagina, Carregando, Confirmacao, EstadoVazio } from '../components/ui';
+import { CabecalhoPagina, Confirmacao, EstadoVazio, Esqueleto } from '../components/ui';
 import { useAuth } from '../contexts/AuthContext';
 import { useEstoque } from '../contexts/EstoqueContext';
 import { useToast } from '../contexts/ToastContext';
@@ -9,6 +9,7 @@ import { formatarData, formatarNumero } from '../lib/format';
 import { exportarCSV } from '../lib/relatorios';
 import { codigoDoItem } from '../lib/sku';
 import { descreverItem, GENEROS, TIPOS_PECA, type MovimentacaoDetalhada, type TipoMovimentacao } from '../lib/types';
+import { useAtalhoDeBusca } from '../lib/useAtalhoDeBusca';
 
 const POR_PAGINA = 20;
 
@@ -46,6 +47,7 @@ const CONFIG: Record<
 
 export function Movimentacoes({ tipo }: { tipo: TipoMovimentacao }) {
   const config = CONFIG[tipo];
+  const campoDeBusca = useAtalhoDeBusca<HTMLInputElement>();
   const { movimentacoes, excluirMovimentacao, carregando } = useEstoque();
   const { ehAdministrador } = useAuth();
   const { abrir } = useRegistro();
@@ -144,19 +146,22 @@ export function Movimentacoes({ tipo }: { tipo: TipoMovimentacao }) {
       />
 
       {carregando ? (
-        <Carregando />
+        <Esqueleto cabecalho={false} />
       ) : (
         <section className="painel overflow-hidden">
           <div className="flex flex-wrap items-center gap-2 border-b border-linha p-3">
             <div className="relative min-w-[14rem] flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-suave" />
               <input
-                className="campo pl-9"
+                ref={campoDeBusca}
+                className="campo pl-9 sm:pr-9"
                 placeholder={`Buscar por código, peça, ${config.extra?.rotulo.toLowerCase() ?? 'responsável'}…`}
                 aria-label="Buscar"
+                aria-keyshortcuts="/"
                 value={busca}
                 onChange={(e) => filtrar(setBusca)(e.target.value)}
               />
+              <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-linha px-1.5 font-mono text-[11px] text-suave sm:block" title="Atalho: tecla /">/</kbd>
             </div>
             <select className="campo w-auto" aria-label="Tipo de peça" value={filtroTipo} onChange={(e) => filtrar(setFiltroTipo)(e.target.value)}>
               <option value="">Todos os tipos</option>

@@ -1,12 +1,13 @@
 import { Boxes, Download, PackageMinus, Search, Trash2, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useRegistro } from '../components/Registro';
-import { CabecalhoPagina, Carregando, EstadoVazio, Selo } from '../components/ui';
+import { CabecalhoPagina, EstadoVazio, Esqueleto, Selo } from '../components/ui';
 import { useEstoque } from '../contexts/EstoqueContext';
 import { formatarNumero } from '../lib/format';
 import { exportarCSV } from '../lib/relatorios';
 import { codigoDoItem } from '../lib/sku';
 import { GENEROS, TAMANHOS, TIPOS_PECA, type ItemComSaldo } from '../lib/types';
+import { useAtalhoDeBusca } from '../lib/useAtalhoDeBusca';
 
 const ESTOQUE_BAIXO = 3;
 type Situacao = 'disponivel' | 'baixo' | 'esgotado';
@@ -26,6 +27,7 @@ const SELOS = {
 export function Estoque() {
   const { itens, carregando } = useEstoque();
   const { abrir } = useRegistro();
+  const campoDeBusca = useAtalhoDeBusca<HTMLInputElement>();
   const [busca, setBusca] = useState('');
   const [tipo, setTipo] = useState('');
   const [genero, setGenero] = useState('');
@@ -74,7 +76,7 @@ export function Estoque() {
     });
   }
 
-  if (carregando) return <Carregando />;
+  if (carregando) return <Esqueleto />;
 
   return (
     <>
@@ -111,7 +113,16 @@ export function Estoque() {
         <div className="flex flex-wrap items-center gap-2 border-b border-linha p-3">
           <div className="relative min-w-[14rem] flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-suave" />
-            <input className="campo pl-9" placeholder="Buscar por código ou peça…" aria-label="Buscar item" value={busca} onChange={(e) => setBusca(e.target.value)} />
+            <input
+              ref={campoDeBusca}
+              className="campo pl-9 sm:pr-9"
+              placeholder="Buscar por código ou peça…"
+              aria-label="Buscar item"
+              aria-keyshortcuts="/"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+            <kbd className="pointer-events-none absolute right-2.5 top-1/2 hidden -translate-y-1/2 rounded border border-linha px-1.5 font-mono text-[11px] text-suave sm:block" title="Atalho: tecla /">/</kbd>
           </div>
           <select className="campo w-auto" aria-label="Tipo de peça" value={tipo} onChange={(e) => setTipo(e.target.value)}>
             <option value="">Todos os tipos</option>
@@ -186,7 +197,7 @@ export function Estoque() {
                           <span className="numero w-8 text-right font-medium">{formatarNumero(item.saldo)}</span>
                           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-fundo">
                             <div
-                              className={`h-full rounded-full ${situacaoDo(item) === 'disponivel' ? 'bg-petroleo' : 'bg-trigo'}`}
+                              className={`h-full origin-left animate-crescer rounded-full ${situacaoDo(item) === 'disponivel' ? 'bg-petroleo' : 'bg-trigo'}`}
                               style={{ width: `${(item.saldo / maiorSaldo) * 100}%` }}
                             />
                           </div>

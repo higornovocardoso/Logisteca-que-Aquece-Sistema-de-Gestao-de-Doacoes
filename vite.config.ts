@@ -11,8 +11,6 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;
           if (/[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/.test(id)) return 'react-vendor';
-          if (/[\\/](jspdf|jspdf-autotable)[\\/]/.test(id)) return 'pdf-vendor';
-          if (/[\\/](chart\.js|react-chartjs-2|chartjs-adapter-date-fns)[\\/]/.test(id)) return 'charts';
           return undefined;
         },
       },

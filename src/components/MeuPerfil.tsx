@@ -122,7 +122,7 @@ function FormularioSenha({ aoFechar }: { aoFechar(): void }) {
         value={valores.novaSenha}
         onChange={alterar('novaSenha')}
         erro={erros.novaSenha}
-        dica="Mínimo de 6 caracteres."
+        dica="Mínimo de 8 caracteres."
         autoComplete="new-password"
       />
       <Campo

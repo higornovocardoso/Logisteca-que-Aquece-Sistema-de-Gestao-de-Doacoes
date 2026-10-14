@@ -18,7 +18,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEstoque } from '../contexts/EstoqueContext';
@@ -26,10 +26,11 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
 import { servico } from '../data';
 import type { TipoMovimentacao } from '../lib/types';
+import { preCarregar } from '../paginas';
 import { LogoSenai } from './Logo';
 import { MeuPerfil } from './MeuPerfil';
 import { RegistroProvider, useRegistro } from './Registro';
-import { Confirmacao } from './ui';
+import { Confirmacao, Esqueleto } from './ui';
 
 interface ItemDeMenu {
   para: string;
@@ -140,17 +141,28 @@ function Navegacao({ aoNavegar }: { aoNavegar?: () => void }) {
                     to={para}
                     end={para === '/'}
                     onClick={aoNavegar}
+                    onMouseEnter={() => preCarregar(para)}
+                    onFocus={() => preCarregar(para)}
                     className={({ isActive }) =>
                       `group relative flex items-center gap-2.5 rounded-md px-2.5 py-[7px] text-[13.5px] transition-colors ${
-                        isActive ? 'bg-white/[0.08] font-medium text-white' : 'text-white/65 hover:bg-white/[0.05] hover:text-white'
+                        isActive ? 'font-medium text-white' : 'text-white/65 hover:bg-white/[0.05] hover:text-white'
                       }`
                     }
                   >
                     {({ isActive }) => (
                       <>
-                        {isActive && <span className="absolute -left-3 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r bg-brasa" />}
-                        <Icone className={`h-4 w-4 ${isActive ? 'text-brasa' : ''}`} />
-                        {rotulo}
+                        {isActive && (
+                          // O destaque desliza de um item para o outro ao trocar de página
+                          <motion.span
+                            layoutId={`destaque-menu${aoNavegar ? '-celular' : ''}`}
+                            className="absolute inset-0 rounded-md bg-white/[0.08]"
+                            transition={{ type: 'spring', stiffness: 520, damping: 40 }}
+                          >
+                            <span className="absolute -left-3 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r bg-brasa" />
+                          </motion.span>
+                        )}
+                        <Icone className={`relative h-4 w-4 transition-colors ${isActive ? 'text-brasa' : ''}`} />
+                        <span className="relative">{rotulo}</span>
                       </>
                     )}
                   </NavLink>
@@ -341,6 +353,17 @@ export function Layout() {
     document.title = TITULOS_DE_PAGINA[location.pathname] ?? 'Início';
   }, [location.pathname]);
 
+  // Com o navegador ocioso, adianta o carregamento das demais páginas: a navegação fica instantânea
+  useEffect(() => {
+    const carregarTodas = () => Object.keys(TITULOS_DE_PAGINA).forEach(preCarregar);
+    if ('requestIdleCallback' in window) {
+      const id = window.requestIdleCallback(carregarTodas, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = setTimeout(carregarTodas, 1500);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
     <RegistroProvider>
       <div className="min-h-screen lg:pl-60">
@@ -391,8 +414,15 @@ export function Layout() {
         </header>
 
         <main className="mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <motion.div key={location.pathname} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-            <Outlet />
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Suspense fallback={<Esqueleto formato={location.pathname === '/' ? 'painel' : 'tabela'} />}>
+              <Outlet />
+            </Suspense>
           </motion.div>
         </main>
       </div>

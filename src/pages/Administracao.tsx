@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useEstoque } from '../contexts/EstoqueContext';
 import { useToast } from '../contexts/ToastContext';
 import { servico, type DadosEstoque } from '../data';
-import { gerarBackup, lerBackup, nomeDoArquivoDeBackup } from '../lib/backup';
+import { gerarBackup, lerBackup, nomeDoArquivoDeBackup, TAMANHO_MAXIMO_DO_BACKUP } from '../lib/backup';
 import { formatarNumero } from '../lib/format';
 import { baixarArquivo, exportarCSV } from '../lib/relatorios';
 import { PERFIS, type AcaoAtividade, type Atividade, type Usuario } from '../lib/types';
@@ -262,7 +262,7 @@ function FormularioUsuario({
         value={valores.senha}
         onChange={alterar('senha')}
         erro={erros.senha}
-        dica={usuario ? 'Deixe em branco para manter a senha atual.' : 'Mínimo de 6 caracteres.'}
+        dica={usuario ? 'Deixe em branco para manter a senha atual.' : 'Mínimo de 8 caracteres.'}
         autoComplete="new-password"
       />
       <div className="flex justify-end gap-2 border-t border-linha pt-4">
@@ -488,6 +488,10 @@ function Dados() {
     const escolhido = lista?.[0];
     if (arquivo.current) arquivo.current.value = '';
     if (!escolhido) return;
+    if (escolhido.size > TAMANHO_MAXIMO_DO_BACKUP) {
+      avisar('O arquivo é grande demais para ser um backup do sistema (máximo de 5 MB).', 'erro');
+      return;
+    }
     try {
       setImportando(lerBackup(await escolhido.text()));
     } catch (e) {

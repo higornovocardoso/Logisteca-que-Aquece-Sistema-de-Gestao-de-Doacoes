@@ -27,4 +27,13 @@ describe('limitador de tentativas de login', () => {
     limitador.limpar('ana');
     expect(limitador.situacao('ana').tentativasRestantes).toBe(MAX_TENTATIVAS);
   });
+
+  it('aceita nomes que coincidem com propriedades de objetos', () => {
+    const limitador = criarLimitadorDeTentativas(new ArmazenamentoEmMemoria());
+    for (const nome of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
+      expect(limitador.situacao(nome).tentativasRestantes).toBe(MAX_TENTATIVAS);
+      expect(limitador.registrarFalha(nome).tentativasRestantes).toBe(MAX_TENTATIVAS - 1);
+    }
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
 });

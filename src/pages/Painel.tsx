@@ -3,12 +3,12 @@ import { useMemo, type ReactNode } from 'react';
 import { Bar, Line } from 'react-chartjs-2';
 import { Link } from 'react-router-dom';
 import { useRegistro } from '../components/Registro';
-import { CabecalhoPagina, Carregando, EstadoVazio, Selo } from '../components/ui';
+import { CabecalhoPagina, EstadoVazio, Esqueleto, NumeroAnimado, Selo } from '../components/ui';
 import { useEstoque } from '../contexts/EstoqueContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { somar } from '../lib/estoque';
 import { formatarData, formatarNumero } from '../lib/format';
-import { paletaDosGraficos } from '../lib/graficos';
+import { paletaDosGraficos } from '../lib/graficos'; // também registra os componentes do Chart.js
 import { distribuirPor, seriePorSemana, type Distribuicao } from '../lib/series';
 import { codigoDoItem } from '../lib/sku';
 import { GENEROS, ROTULOS_MOVIMENTACAO, type TipoMovimentacao } from '../lib/types';
@@ -51,7 +51,9 @@ function Indicador({ rotulo, valor, detalhe, faisca, cor }: { rotulo: string; va
     <div className="flex items-end justify-between gap-3 bg-superficie px-5 py-4">
       <div className="min-w-0">
         <p className="rotulo-mono">{rotulo}</p>
-        <p className="numero mt-1.5 text-[28px] font-medium leading-none tracking-tight">{formatarNumero(valor)}</p>
+        <p className="numero mt-1.5 text-[28px] font-medium leading-none tracking-tight">
+          <NumeroAnimado valor={valor} formatar={formatarNumero} />
+        </p>
         <p className="mt-1.5 truncate text-xs text-suave">{detalhe}</p>
       </div>
       <Faisca valores={faisca} cor={cor} />
@@ -84,7 +86,9 @@ function BarraDeDestino({ distribuido, estoque, descartado }: { distribuido: num
               {p.rotulo}
             </dt>
             <dd className="mt-1 flex items-baseline gap-1.5">
-              <span className="numero text-lg font-medium">{formatarNumero(p.valor)}</span>
+              <span className="numero text-lg font-medium">
+                <NumeroAnimado valor={p.valor} formatar={formatarNumero} />
+              </span>
               <span className="numero text-xs text-suave">{percentual(p.valor, total)}</span>
             </dd>
           </div>
@@ -179,7 +183,7 @@ export function Painel() {
     return [...totais.entries()].sort(([, a], [, b]) => b - a);
   }, [movimentacoes]);
 
-  if (carregando) return <Carregando />;
+  if (carregando) return <Esqueleto formato="painel" />;
   if (erro) return <EstadoVazio icone={AlertTriangle} titulo="Não foi possível carregar os dados" texto={erro} />;
 
   if (movimentacoes.length === 0) {
@@ -206,10 +210,10 @@ export function Painel() {
   const eixos = { grid: { color: cores.grade }, border: { display: false }, ticks: { color: cores.texto } };
 
   return (
-    <>
+    <div className="revelar">
       <CabecalhoPagina titulo="Painel" descricao="Visão geral das doações recebidas, distribuídas e em estoque." />
 
-      <section className="grid gap-px overflow-hidden rounded-xl border border-linha bg-linha shadow-cartao sm:grid-cols-2 xl:grid-cols-4">
+      <section className="revelar grid gap-px overflow-hidden rounded-xl border border-linha bg-linha shadow-cartao sm:grid-cols-2 xl:grid-cols-4">
         <Indicador
           rotulo="Em estoque"
           valor={resumo.emEstoque}
@@ -359,6 +363,6 @@ export function Painel() {
           </ul>
         </Secao>
       </div>
-    </>
+    </div>
   );
 }

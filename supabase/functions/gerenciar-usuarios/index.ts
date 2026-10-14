@@ -5,6 +5,16 @@ import { createClient } from 'npm:@supabase/supabase-js@2.50.0';
 
 const DOMINIO_USUARIOS = 'logisticaqueaquece.local';
 const PERFIS = ['Administrador', 'Operador'];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SENHA_MINIMA = 8;
+const SENHA_MAXIMA = 72;
+
+/** Erros do Supabase Auth ficam só no log do servidor; quem chamou recebe uma mensagem clara. */
+function falhaDoAuth(acao: string, falha: { code?: string; message: string }) {
+  console.error(acao, falha);
+  if (falha.code === 'weak_password') return erro(400, 'Senha fraca ou já exposta em vazamentos de dados. Escolha outra.');
+  return erro(400, `Não foi possível ${acao}. Tente novamente.`);
+}
 
 const cabecalhos = {
   'Access-Control-Allow-Origin': '*',
@@ -58,34 +68,41 @@ Deno.serve(async (req) => {
         return erro(400, 'O nome de usuário deve ter de 3 a 30 caracteres: letras, números, ponto, hífen ou sublinhado.');
       }
       if (!PERFIS.includes(perfil)) return erro(400, 'Perfil inválido.');
-      if (senha.length < 6 || senha.length > 72) return erro(400, 'A senha deve ter entre 6 e 72 caracteres.');
+      if (senha.length < SENHA_MINIMA || senha.length > SENHA_MAXIMA) {
+        return erro(400, `A senha deve ter entre ${SENHA_MINIMA} e ${SENHA_MAXIMA} caracteres.`);
+      }
 
-      const { data: existente } = await admin.from('perfis').select('id').ilike('usuario', usuario).maybeSingle();
+      const { data: existente } = await admin.from('perfis').select('id').eq('usuario', usuario.toLowerCase()).maybeSingle();
       if (existente) return erro(409, `O nome de usuário "${usuario}" já está em uso.`);
 
       const { data, error } = await admin.auth.admin.createUser({
         email: `${usuario.toLowerCase()}@${DOMINIO_USUARIOS}`,
         password: senha,
         email_confirm: true,
-        user_metadata: { nome, perfil },
+        user_metadata: { nome },
+        // app_metadata só pode ser definido com a chave de serviço: é daqui que o banco lê o perfil
+        // e libera o acesso (ver criar_perfil em supabase/schema.sql)
+        app_metadata: { perfil },
       });
-      if (error) return erro(400, `Não foi possível criar o usuário: ${error.message}`);
+      if (error) return falhaDoAuth('criar o usuário', error);
       return resposta(200, { id: data.user.id });
     }
 
     case 'redefinir_senha': {
       const id = texto(corpo.id);
       const senha = typeof corpo.senha === 'string' ? corpo.senha : '';
-      if (!id) return erro(400, 'Usuário não informado.');
-      if (senha.length < 6 || senha.length > 72) return erro(400, 'A senha deve ter entre 6 e 72 caracteres.');
+      if (!UUID.test(id)) return erro(400, 'Usuário não informado.');
+      if (senha.length < SENHA_MINIMA || senha.length > SENHA_MAXIMA) {
+        return erro(400, `A senha deve ter entre ${SENHA_MINIMA} e ${SENHA_MAXIMA} caracteres.`);
+      }
       const { error } = await admin.auth.admin.updateUserById(id, { password: senha });
-      if (error) return erro(400, `Não foi possível redefinir a senha: ${error.message}`);
+      if (error) return falhaDoAuth('redefinir a senha', error);
       return resposta(200, { ok: true });
     }
 
     case 'remover': {
       const id = texto(corpo.id);
-      if (!id) return erro(400, 'Usuário não informado.');
+      if (!UUID.test(id)) return erro(400, 'Usuário não informado.');
       if (id === solicitante.id) return erro(400, 'Você não pode remover o próprio usuário.');
 
       const { data: alvo } = await admin.from('perfis').select('perfil, ativo').eq('id', id).maybeSingle();
@@ -96,7 +113,7 @@ Deno.serve(async (req) => {
       }
 
       const { error } = await admin.auth.admin.deleteUser(id);
-      if (error) return erro(400, `Não foi possível remover o usuário: ${error.message}`);
+      if (error) return falhaDoAuth('remover o usuário', error);
       return resposta(200, { ok: true });
     }
 

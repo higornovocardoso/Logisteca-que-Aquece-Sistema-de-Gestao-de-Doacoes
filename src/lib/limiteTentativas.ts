@@ -31,9 +31,12 @@ export function criarLimitadorDeTentativas(armazenamento: Storage | undefined, a
       // sem persistência: o limite vale só para esta aba
     }
   };
-  const chave = (usuario: string) => usuario.trim().toLowerCase();
-  const recentes = (registro: Registro, usuario: string) =>
-    (registro[chave(usuario)] ?? []).filter((momento) => agora() - momento < JANELA_MS);
+  // O prefixo impede que nomes como "constructor" ou "__proto__" colidam com propriedades do objeto
+  const chave = (usuario: string) => `u:${usuario.trim().toLowerCase()}`;
+  const recentes = (registro: Registro, usuario: string) => {
+    const falhas = Object.prototype.hasOwnProperty.call(registro, chave(usuario)) ? registro[chave(usuario)] : [];
+    return (Array.isArray(falhas) ? falhas : []).filter((momento) => typeof momento === 'number' && agora() - momento < JANELA_MS);
+  };
 
   return {
     situacao(usuario: string): SituacaoLogin {

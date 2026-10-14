@@ -161,8 +161,9 @@ type Tabela = Pick<Relatorio, 'colunas' | 'linhas' | 'nomeArquivo'>;
 
 export async function exportarCSV(tabela: Tabela) {
   const { default: Papa } = await import('papaparse');
-  // Ponto e vírgula e BOM para o Excel em português abrir o arquivo corretamente
-  const csv = Papa.unparse({ fields: tabela.colunas, data: tabela.linhas }, { delimiter: ';' });
+  // Ponto e vírgula e BOM para o Excel em português abrir o arquivo corretamente.
+  // escapeFormulae impede que um texto como "=HYPERLINK(...)" vire fórmula ao abrir a planilha.
+  const csv = Papa.unparse({ fields: tabela.colunas, data: tabela.linhas }, { delimiter: ';', escapeFormulae: true });
   baixarArquivo(`\uFEFF${csv}`, 'text/csv;charset=utf-8', `${tabela.nomeArquivo}.csv`);
 }
 

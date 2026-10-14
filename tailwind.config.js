@@ -33,10 +33,12 @@ export default {
       keyframes: {
         crescer: { from: { transform: 'scaleX(0)' }, to: { transform: 'scaleX(1)' } },
         surgir: { from: { opacity: '0', transform: 'translateY(6px)' }, to: { opacity: '1', transform: 'none' } },
+        pulso: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '0.45' } },
       },
       animation: {
         crescer: 'crescer 0.8s cubic-bezier(0.22, 1, 0.36, 1) both',
         surgir: 'surgir 0.35s ease-out both',
+        pulso: 'pulso 1.6s ease-in-out infinite',
       },
     },
   },
