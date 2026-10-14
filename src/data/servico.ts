@@ -138,6 +138,12 @@ export function criarServico(
       await registrar('usuario_alterado', 'Trocou a própria senha');
     },
 
+    async alterarMeuUsuario(novoUsuario, senhaAtual) {
+      const anterior = (await fonte.sessaoAtual())?.usuario;
+      await fonte.alterarMeuUsuario(novoUsuario, senhaAtual);
+      await registrar('usuario_alterado', `Alterou o próprio nome de usuário de ${anterior ?? '?'} para ${novoUsuario}`);
+    },
+
     async restaurarDadosDeExemplo() {
       await fonte.restaurarDadosDeExemplo?.();
       await registrar('backup_importado', 'Restaurou os dados de exemplo');

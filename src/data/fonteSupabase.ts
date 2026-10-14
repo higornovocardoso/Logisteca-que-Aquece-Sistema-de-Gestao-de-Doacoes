@@ -169,6 +169,12 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
       if (error) throw new ErroDeNegocio(`Não foi possível trocar a senha: ${error.message}`);
     },
 
+    async alterarMeuUsuario(novoUsuario, senhaAtual) {
+      // O nome de usuário é o e-mail de login no Supabase Auth: só a Edge Function, com a chave de serviço, troca os dois juntos
+      await gerenciarUsuarios({ acao: 'alterar_meu_usuario', usuario: novoUsuario, senha: senhaAtual });
+      await supabase.auth.refreshSession();
+    },
+
     async listarAtividades() {
       const { data, error } = await supabase.from('atividades').select('*').order('momento', { ascending: false }).limit(2000);
       falhar(error);

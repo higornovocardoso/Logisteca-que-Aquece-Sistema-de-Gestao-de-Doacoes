@@ -174,9 +174,21 @@ describe('fonte local (modo demonstração)', () => {
       await expect(fonte.entrar('Marlene', 'nova-senha')).resolves.toBeTruthy();
     });
 
+    it('troca o próprio nome de usuário com a senha atual e passa a entrar com o novo', async () => {
+      await fonte.entrar('Marlene', 'Marlene');
+      await expect(fonte.alterarMeuUsuario('marlene.souza', 'errada')).rejects.toThrow('senha atual');
+      await expect(fonte.alterarMeuUsuario('VISITANTE', 'Marlene')).rejects.toThrow('em uso');
+      await fonte.alterarMeuUsuario('marlene.souza', 'Marlene');
+      await expect(fonte.sessaoAtual()).resolves.toMatchObject({ usuario: 'marlene.souza' });
+      await fonte.sair();
+      await expect(fonte.entrar('Marlene', 'Marlene')).rejects.toThrow();
+      await expect(fonte.entrar('marlene.souza', 'Marlene')).resolves.toMatchObject({ nome: 'Marlene' });
+    });
+
     it('exige login', async () => {
       await expect(fonte.atualizarMeuPerfil('Alguém')).rejects.toThrow('sessão');
       await expect(fonte.trocarMinhaSenha('a', 'b')).rejects.toThrow('sessão');
+      await expect(fonte.alterarMeuUsuario('alguem', 'b')).rejects.toThrow('sessão');
     });
   });
 });

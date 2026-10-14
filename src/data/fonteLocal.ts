@@ -309,6 +309,18 @@ export function criarFonteLocal(
       gravarUsuarios(usuarios);
     },
 
+    async alterarMeuUsuario(novoUsuario, senhaAtual) {
+      const eu = await exigir();
+      if (!(await conferirSenha(senhaAtual, eu.senha_hash))) throw new ErroDeNegocio('A senha atual está incorreta.');
+      const usuarios = await lerUsuarios();
+      if (usuarios.some((u) => u.id !== eu.id && u.usuario.toLowerCase() === novoUsuario.toLowerCase())) {
+        throw new ErroDeNegocio(`O nome de usuário "${novoUsuario}" já está em uso.`);
+      }
+      usuarios.find((u) => u.id === eu.id)!.usuario = novoUsuario;
+      gravarUsuarios(usuarios);
+      store.gravar(CHAVES.sessao, { ...sessaoSalva(), usuario: novoUsuario });
+    },
+
     async listarAtividades() {
       await exigir('Administrador');
       lerDados(); // garante o histórico de exemplo na primeira execução

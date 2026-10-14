@@ -20,7 +20,7 @@ O sistema registra as roupas recebidas como doação, controla o que sai para di
 **Gestão**
 - **Painel:** indicadores com tendência semanal, o destino de todas as peças arrecadadas (distribuídas, em estoque e descartadas), gráficos por tipo, gênero, fornecedor e motivo de descarte, estoque crítico e últimos registros.
 - **Relatórios:** movimentações, resumo por tipo de peça, posição de estoque e doações por fornecedor, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
-- **Meu perfil:** cada usuário, administrador ou operador, altera o próprio nome e troca a própria senha, confirmando a senha atual.
+- **Meu perfil:** cada usuário, administrador ou operador, altera o próprio nome, o nome de usuário usado no login e a senha (essas duas últimas confirmando a senha atual).
 - **Administração:** usuários com perfil (*Administrador* ou *Operador*), registro de todas as atividades (quem fez o quê e quando), backup em JSON, importação de backup e limpeza dos dados para uma nova campanha.
 
 **Segurança**
