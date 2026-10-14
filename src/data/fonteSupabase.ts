@@ -151,6 +151,24 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
       await gerenciarUsuarios({ acao: 'remover', id });
     },
 
+    async atualizarMeuPerfil(nome) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) throw new ErroDeNegocio('Sua sessão expirou. Entre novamente.');
+      // A política de acesso e o gatilho proteger_campos_do_perfil limitam a alteração ao próprio nome
+      const { error } = await supabase.from('perfis').update({ nome }).eq('id', data.user.id);
+      falhar(error);
+    },
+
+    async trocarMinhaSenha(senhaAtual, novaSenha) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user?.email) throw new ErroDeNegocio('Sua sessão expirou. Entre novamente.');
+      const conferencia = await supabase.auth.signInWithPassword({ email: data.user.email, password: senhaAtual });
+      if (conferencia.error) throw new ErroDeNegocio('A senha atual está incorreta.');
+      const { error } = await supabase.auth.updateUser({ password: novaSenha });
+      if (error?.code === 'same_password') throw new ErroDeNegocio('A nova senha deve ser diferente da atual.');
+      if (error) throw new ErroDeNegocio(`Não foi possível trocar a senha: ${error.message}`);
+    },
+
     async listarAtividades() {
       const { data, error } = await supabase.from('atividades').select('*').order('momento', { ascending: false }).limit(2000);
       falhar(error);

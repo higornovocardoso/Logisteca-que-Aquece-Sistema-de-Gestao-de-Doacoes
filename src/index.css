@@ -102,7 +102,7 @@
   }
 
   .campo {
-    @apply block h-9 w-full rounded-lg border border-linha bg-superficie px-3 text-sm text-texto shadow-sm transition-colors placeholder:text-suave/70 focus:border-petroleo focus:outline-none focus:ring-2 focus:ring-petroleo/20;
+    @apply block h-9 w-full rounded-lg border border-linha bg-superficie px-3 text-sm text-texto shadow-sm transition-colors placeholder:text-suave/70 focus:border-petroleo focus:outline-none focus:ring-2 focus:ring-petroleo/20 disabled:cursor-not-allowed disabled:bg-fundo disabled:text-suave disabled:shadow-none;
   }
 
   textarea.campo {

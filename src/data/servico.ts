@@ -128,6 +128,16 @@ export function criarServico(
       await registrar('usuario_removido', 'Removeu um usuário');
     },
 
+    async atualizarMeuPerfil(nome) {
+      await fonte.atualizarMeuPerfil(nome);
+      await registrar('usuario_alterado', `Atualizou o próprio nome para ${nome}`);
+    },
+
+    async trocarMinhaSenha(senhaAtual, novaSenha) {
+      await fonte.trocarMinhaSenha(senhaAtual, novaSenha);
+      await registrar('usuario_alterado', 'Trocou a própria senha');
+    },
+
     async restaurarDadosDeExemplo() {
       await fonte.restaurarDadosDeExemplo?.();
       await registrar('backup_importado', 'Restaurou os dados de exemplo');

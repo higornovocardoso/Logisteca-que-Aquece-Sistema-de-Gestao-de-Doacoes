@@ -293,6 +293,22 @@ export function criarFonteLocal(
       gravarUsuarios(usuarios);
     },
 
+    async atualizarMeuPerfil(nome) {
+      const eu = await exigir();
+      const usuarios = await lerUsuarios();
+      usuarios.find((u) => u.id === eu.id)!.nome = nome;
+      gravarUsuarios(usuarios);
+      store.gravar(CHAVES.sessao, { ...sessaoSalva(), nome });
+    },
+
+    async trocarMinhaSenha(senhaAtual, novaSenha) {
+      const eu = await exigir();
+      if (!(await conferirSenha(senhaAtual, eu.senha_hash))) throw new ErroDeNegocio('A senha atual está incorreta.');
+      const usuarios = await lerUsuarios();
+      usuarios.find((u) => u.id === eu.id)!.senha_hash = await gerarHashDeSenha(novaSenha);
+      gravarUsuarios(usuarios);
+    },
+
     async listarAtividades() {
       await exigir('Administrador');
       lerDados(); // garante o histórico de exemplo na primeira execução
