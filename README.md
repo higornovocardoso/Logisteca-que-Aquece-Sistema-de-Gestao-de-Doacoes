@@ -79,9 +79,10 @@ Em *Administração › Dados e backup*, o botão *Restaurar* desfaz as alteraç
 ### Com o Supabase
 
 1. Crie um projeto no [Supabase](https://supabase.com/) e execute o script [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor.
-2. Em **Authentication › Users**, crie um usuário com o e-mail `seunome@logisticaqueaquece.local`. Em *User Metadata*, informe `{"nome": "Seu Nome", "perfil": "Administrador"}`.
-3. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`) do projeto.
-4. Entre no sistema usando só `seunome` como nome de usuário.
+2. Publique a Edge Function de usuários: `supabase functions deploy gerenciar-usuarios`. Ela cria, remove e redefine a senha de usuários com a chave de serviço, que fica só no servidor.
+3. Em **Authentication › Users**, crie o primeiro administrador com o e-mail `seunome@logisticaqueaquece.local`. Em *User Metadata*, informe `{"nome": "Seu Nome", "perfil": "Administrador"}`.
+4. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`) do projeto.
+5. Entre no sistema usando só `seunome` como nome de usuário. Os demais usuários são criados em *Administração › Usuários*.
 
 ## Scripts
 
@@ -104,7 +105,9 @@ src/
 ├── lib/          # Regras de estoque, validação, relatórios, backup, limite de login e gráficos
 └── pages/        # Login, Painel, Entradas/Saídas/Descartes, Estoque, Relatórios e Administração
 supabase/
-└── schema.sql    # Tabelas, gatilhos, políticas de acesso (RLS) e funções de permissão
+├── schema.sql    # Tabelas, gatilhos, políticas de acesso (RLS) e funções de permissão
+└── functions/
+    └── gerenciar-usuarios/   # Edge Function: criar, remover e redefinir senha de usuários
 ```
 
 ## Autor

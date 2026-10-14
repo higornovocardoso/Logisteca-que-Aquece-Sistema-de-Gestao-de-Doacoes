@@ -1,11 +1,9 @@
-import { createClient, type PostgrestError } from '@supabase/supabase-js';
+import { createClient, FunctionsHttpError, type PostgrestError } from '@supabase/supabase-js';
 import type { Atividade, Item, Movimentacao, Usuario } from '../lib/types';
 import { ErroDeNegocio, type FonteDeDados, type Sessao } from './fonte';
 
 /** Domínio usado para transformar o nome de usuário em e-mail no Supabase Auth. */
 const DOMINIO_USUARIOS = 'logisticaqueaquece.local';
-const COMO_CRIAR_USUARIOS =
-  'Com o Supabase, crie usuários no painel em Authentication › Users, usando o e-mail nome@logisticaqueaquece.local. O perfil é criado automaticamente.';
 
 function paraEmail(usuario: string): string {
   const limpo = usuario.trim().toLowerCase();
@@ -22,6 +20,17 @@ function falhar(error: PostgrestError | null): void {
 
 export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados {
   const supabase = createClient(url, chaveAnon);
+
+  /** Operações que exigem a chave de serviço rodam na Edge Function (supabase/functions/gerenciar-usuarios). */
+  const gerenciarUsuarios = async (corpo: Record<string, unknown>) => {
+    const { error } = await supabase.functions.invoke('gerenciar-usuarios', { body: corpo });
+    if (!error) return;
+    if (error instanceof FunctionsHttpError) {
+      const resposta = (await error.context.json().catch(() => null)) as { erro?: string } | null;
+      throw new ErroDeNegocio(resposta?.erro ?? 'Não foi possível concluir a operação.');
+    }
+    throw new Error(error.message);
+  };
 
   const sessaoAtual = async (): Promise<Sessao | null> => {
     const { data } = await supabase.auth.getUser();
@@ -126,18 +135,20 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
       return (data ?? []) as Usuario[];
     },
 
-    async criarUsuario() {
-      throw new ErroDeNegocio(COMO_CRIAR_USUARIOS);
+    async criarUsuario(novo) {
+      await gerenciarUsuarios({ acao: 'criar', ...novo });
     },
 
     async alterarUsuario(id, { senha, ...alteracao }) {
-      if (senha) throw new ErroDeNegocio('Com o Supabase, redefina senhas pelo painel em Authentication › Users.');
-      const { error } = await supabase.from('perfis').update(alteracao).eq('id', id);
-      falhar(error);
+      if (Object.keys(alteracao).length > 0) {
+        const { error } = await supabase.from('perfis').update(alteracao).eq('id', id);
+        falhar(error);
+      }
+      if (senha) await gerenciarUsuarios({ acao: 'redefinir_senha', id, senha });
     },
 
-    async removerUsuario() {
-      throw new ErroDeNegocio('Com o Supabase, remova usuários pelo painel em Authentication › Users, ou desative o usuário aqui.');
+    async removerUsuario(id) {
+      await gerenciarUsuarios({ acao: 'remover', id });
     },
 
     async listarAtividades() {
