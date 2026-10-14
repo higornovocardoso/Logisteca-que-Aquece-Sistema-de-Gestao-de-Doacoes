@@ -368,11 +368,7 @@ export function Layout() {
               <button type="button" className="btn-icone lg:hidden" onClick={() => setMenuAberto(true)} aria-label="Abrir menu">
                 <Menu className="h-5 w-5" />
               </button>
-              <p className="text-[13px] text-suave">
-                <span className="hidden sm:inline">Logística que Aquece</span>
-                <span className="mx-2 hidden text-linha sm:inline">/</span>
-                <span className="font-medium text-texto">{TITULOS_DE_PAGINA[location.pathname]}</span>
-              </p>
+              <p className="text-[13px] font-medium text-texto">{TITULOS_DE_PAGINA[location.pathname]}</p>
             </div>
             <div className="flex items-center gap-2">
               <BotaoRegistrar />
