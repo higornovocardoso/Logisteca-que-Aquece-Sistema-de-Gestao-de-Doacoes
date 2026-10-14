@@ -327,7 +327,7 @@ export function Layout() {
 
   useEffect(() => {
     setMenuAberto(false);
-    document.title = `${TITULOS_DE_PAGINA[location.pathname] ?? 'Início'} · Logística que Aquece`;
+    document.title = TITULOS_DE_PAGINA[location.pathname] ?? 'Início';
   }, [location.pathname]);
 
   return (

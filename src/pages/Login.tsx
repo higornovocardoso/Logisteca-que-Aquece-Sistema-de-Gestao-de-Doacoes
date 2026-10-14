@@ -27,6 +27,10 @@ export function Login() {
   const [agora, setAgora] = useState(Date.now());
 
   useEffect(() => {
+    document.title = 'Entrar';
+  }, []);
+
+  useEffect(() => {
     if (!liberaEm) return;
     const relogio = setInterval(() => {
       setAgora(Date.now());
