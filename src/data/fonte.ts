@@ -54,6 +54,8 @@ export interface FonteDeDados {
   atualizarMeuPerfil(nome: string): Promise<void>;
   /** Cada usuário troca a própria senha, confirmando a senha atual. */
   trocarMinhaSenha(senhaAtual: string, novaSenha: string): Promise<void>;
+  /** Cada usuário troca o próprio nome de usuário (o login), confirmando a senha atual. */
+  alterarMeuUsuario(novoUsuario: string, senhaAtual: string): Promise<void>;
 
   listarAtividades(): Promise<Atividade[]>;
   /** Registra uma ação no histórico; sem `usuario`, usa quem está conectado. */

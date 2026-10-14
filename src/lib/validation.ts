@@ -66,6 +66,7 @@ export const edicaoUsuarioSchema = z.object({
 
 export const meuPerfilSchema = z.object({
   nome: nomePessoa('Informe o nome'),
+  usuario: nomeDeUsuario,
 });
 
 export const trocaDeSenhaSchema = z

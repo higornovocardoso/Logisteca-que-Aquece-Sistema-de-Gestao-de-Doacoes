@@ -1,6 +1,7 @@
 // Edge Function: gerenciamento de usuários pelo próprio sistema.
-// Criar, remover e redefinir senha exigem a chave de serviço do Supabase, que só existe aqui,
-// no servidor. Toda chamada confere se quem pediu é um administrador ativo.
+// Criar, remover, redefinir senha e trocar o nome de usuário exigem a chave de serviço do Supabase,
+// que só existe aqui, no servidor. Toda chamada confere quem pediu: administradores gerenciam qualquer
+// usuário; os demais só trocam o próprio nome de usuário, confirmando a senha.
 import { createClient } from 'npm:@supabase/supabase-js@2.50.0';
 
 const DOMINIO_USUARIOS = 'logisticaqueaquece.local';
@@ -42,10 +43,8 @@ Deno.serve(async (req) => {
   const { data: autenticado } = await admin.auth.getUser(token);
   if (!autenticado.user) return erro(401, 'Sua sessão expirou. Entre novamente.');
 
-  const { data: solicitante } = await admin.from('perfis').select('id, nome, perfil, ativo').eq('id', autenticado.user.id).single();
-  if (!solicitante?.ativo || solicitante.perfil !== 'Administrador') {
-    return erro(403, 'Somente administradores podem gerenciar usuários.');
-  }
+  const { data: solicitante } = await admin.from('perfis').select('id, nome, usuario, perfil, ativo').eq('id', autenticado.user.id).single();
+  if (!solicitante?.ativo) return erro(403, 'Este usuário está desativado. Fale com um administrador.');
 
   let corpo: Record<string, unknown>;
   try {
@@ -55,6 +54,42 @@ Deno.serve(async (req) => {
   }
 
   const texto = (valor: unknown) => (typeof valor === 'string' ? valor.trim() : '');
+
+  // Única ação liberada a qualquer usuário ativo, e sempre sobre a própria conta
+  if (corpo.acao === 'alterar_meu_usuario') {
+    const usuario = texto(corpo.usuario).toLowerCase();
+    const senha = typeof corpo.senha === 'string' ? corpo.senha : '';
+    if (!/^[a-z0-9._-]{3,30}$/.test(usuario)) {
+      return erro(400, 'O nome de usuário deve ter de 3 a 30 caracteres: letras, números, ponto, hífen ou sublinhado.');
+    }
+    if (usuario === solicitante.usuario) return resposta(200, { ok: true });
+
+    // Confere a senha atual com um cliente comum, sem privilégios
+    const publico = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const conferencia = await publico.auth.signInWithPassword({ email: autenticado.user.email!, password: senha });
+    if (conferencia.error) return erro(400, 'A senha atual está incorreta.');
+    await publico.auth.signOut({ scope: 'local' }); // encerra só a sessão criada para a conferência
+
+    const { data: existente } = await admin.from('perfis').select('id').eq('usuario', usuario).maybeSingle();
+    if (existente) return erro(409, `O nome de usuário "${usuario}" já está em uso.`);
+
+    const emailAnterior = autenticado.user.email!;
+    const { error } = await admin.auth.admin.updateUserById(solicitante.id, { email: `${usuario}@${DOMINIO_USUARIOS}`, email_confirm: true });
+    if (error) return falhaDoAuth('alterar o nome de usuário', error);
+    const perfil = await admin.from('perfis').update({ usuario }).eq('id', solicitante.id);
+    if (perfil.error) {
+      // Mantém login e perfil sempre iguais: desfaz a troca do e-mail
+      await admin.auth.admin.updateUserById(solicitante.id, { email: emailAnterior, email_confirm: true });
+      return falhaDoAuth('alterar o nome de usuário', perfil.error);
+    }
+    return resposta(200, { ok: true });
+  }
+
+  if (solicitante.perfil !== 'Administrador') {
+    return erro(403, 'Somente administradores podem gerenciar usuários.');
+  }
 
   switch (corpo.acao) {
     case 'criar': {
