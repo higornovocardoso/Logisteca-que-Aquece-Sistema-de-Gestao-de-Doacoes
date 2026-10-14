@@ -1,123 +1,226 @@
-# Logística que Aquece
+<div align="center">
 
-Sistema de controle de estoque da campanha de agasalhos **Logística que Aquece**, promovida pelo **SENAI** com a **Rede Feminina de Garopaba (SC)** no inverno de 2025.
+<img src="docs/telas/painel.png" alt="Painel do sistema: indicadores de estoque, arrecadação, distribuição e descarte, com gráficos por semana, gênero e tipo de peça" width="100%">
 
-O sistema registra as roupas recebidas como doação, controla o que sai para distribuição e o que é descartado na triagem, e mantém o estoque de cada peça sempre atualizado, com relatórios que dão transparência a todo o processo. Foi o primeiro sistema que desenvolvi.
+# Logística que Aquece · Controle de estoque
 
-![Painel](docs/telas/painel.png)
+**Campanha de agasalhos do SENAI com a Rede Feminina de Garopaba (SC)** · inverno de 2025
+
+Sistema que registra as roupas recebidas como doação, o que sai para distribuição e o que é descartado na triagem, mantendo o estoque de cada peça sempre atualizado e com relatórios que dão transparência a todo o processo. Foi o primeiro sistema que desenvolvi.
+
+[![Site no ar](https://img.shields.io/badge/site-logisticaqueaquece.vercel.app-E4572E?style=for-the-badge)](https://logisticaqueaquece.vercel.app)
+[![CI](https://img.shields.io/github/actions/workflow/status/higornovocardoso/Logisteca-que-Aquece/ci.yml?branch=main&label=testes&style=for-the-badge)](https://github.com/higornovocardoso/Logisteca-que-Aquece/actions/workflows/ci.yml)
+[![React + Supabase](https://img.shields.io/badge/React_+_Supabase-0F2A33?style=for-the-badge)](#tecnologias)
+
+[**Ver o site**](https://logisticaqueaquece.vercel.app) · [LinkedIn](https://www.linkedin.com/in/higornovocardoso) · [GitHub](https://github.com/higornovocardoso)
+
+</div>
 
 > **Sobre esta versão:** o código original se perdeu depois da campanha. Este repositório é uma **reconstrução** feita a partir da configuração original do projeto, de capturas de tela do sistema usado na campanha e das funcionalidades que ele tinha, agora com melhorias e um visual novo.
 
-## Funcionalidades
+---
 
-**Operação**
-- **Entradas:** registro das doações por tipo de peça, tamanho, gênero, quantidade, fornecedor e responsável. A opção *Continuar registrando* agiliza o lançamento de várias peças em sequência na mesa de triagem.
-- **Saídas:** retiradas para distribuição, com responsável. O sistema impede retirar mais peças do que há em estoque.
-- **Descartes:** peças sem condições de uso, com o motivo (rasgada, manchada, com mofo…).
-- **Estoque:** saldo de cada item com código próprio (ex.: `CAS-F-M` = casaco feminino M), filtros, alertas de estoque baixo e esgotado, e atalhos para registrar a saída ou o descarte direto da linha.
-- **Registro rápido:** botão *Registrar* em todas as telas e atalhos de teclado <kbd>E</kbd>, <kbd>S</kbd> e <kbd>D</kbd>.
+## Sumário
 
-**Gestão**
-- **Painel:** indicadores com tendência semanal, o destino de todas as peças arrecadadas (distribuídas, em estoque e descartadas), gráficos por tipo, gênero, fornecedor e motivo de descarte, estoque crítico e últimos registros.
-- **Relatórios:** movimentações, resumo por tipo de peça, posição de estoque e doações por fornecedor, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
-- **Meu perfil:** cada usuário, administrador ou operador, altera o próprio nome, o nome de usuário usado no login e a senha (essas duas últimas confirmando a senha atual).
-- **Administração:** usuários com perfil (*Administrador* ou *Operador*), registro de todas as atividades (quem fez o quê e quando), backup em JSON, importação de backup e limpeza dos dados para uma nova campanha.
+- [Destaques](#destaques)
+- [Capturas de tela](#capturas-de-tela)
+- [Tecnologias](#tecnologias)
+- [Estrutura do projeto](#estrutura-do-projeto)
+- [Como funciona](#como-funciona)
+- [Rodando localmente](#rodando-localmente)
+- [Conectando ao Supabase](#conectando-ao-supabase)
+- [Qualidade e automação](#qualidade-e-automação)
+- [Segurança](#segurança)
+- [Acessibilidade e desempenho](#acessibilidade-e-desempenho)
 
-**Segurança**
-- Login com no máximo 5 tentativas a cada 15 minutos, com bloqueio temporário e contagem regressiva.
-- Senhas guardadas apenas como hash (PBKDF2 no modo demonstração e bcrypt no Supabase).
-- Permissões por perfil: operadores registram, administradores também excluem registros, gerenciam usuários e dados.
-- No Supabase, as regras ficam no próprio banco: políticas de acesso (RLS) e gatilhos que impedem estoque negativo, garantem a autoria do registro de atividades e impedem que alguém mude o próprio perfil de acesso.
-- O autor e o horário de cada registro são definidos pelo servidor; contas criadas fora do sistema ficam sem acesso até um administrador liberar.
-- Exportações em CSV neutralizam fórmulas de planilha, e backups são validados com as mesmas regras do banco antes da importação.
-- Cabeçalhos de segurança na Vercel: Content-Security-Policy, HSTS, Permissions-Policy e proteção contra iframes.
+## Destaques
+
+- **Entradas, saídas e descartes.** Cada doação é registrada por tipo de peça, tamanho (Infantil, PP, P, M, G e GG; "Único" para acessórios), gênero, quantidade, fornecedor e quem recebeu. Saídas não passam do que há em estoque, e descartes guardam o motivo (rasgado, manchado, com mofo…).
+- **Estoque sempre certo.** O saldo de cada peça é calculado a partir das movimentações, com código próprio (`CAS-F-M` = casaco feminino M), alertas de estoque baixo e esgotado e atalhos para registrar a saída direto da linha.
+- **Registro rápido.** O botão *Registrar* está em todas as telas, as teclas <kbd>E</kbd>, <kbd>S</kbd> e <kbd>D</kbd> abrem cada formulário, <kbd>/</kbd> leva à busca e *Continuar registrando* agiliza a mesa de triagem.
+- **Painel.** Indicadores com tendência semanal, o destino de todas as peças arrecadadas, gráficos por tipo, gênero, fornecedor e motivo de descarte, estoque crítico e últimos registros.
+- **Relatórios.** Movimentações, resumo por tipo de peça, posição de estoque e doações por fornecedor, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
+- **Administração.** Usuários com perfil (*Administrador* ou *Operador*), registro de tudo o que foi feito (quem, o quê e quando), backup em JSON e limpeza dos dados para uma nova campanha.
+- **Meu perfil.** Cada pessoa altera o próprio nome, o nome de usuário e a senha; o administrador também troca o nome de usuário de qualquer um.
+- **Dois modos.** Conectado ao Supabase em produção ou, sem configurar nada, em modo demonstração com os dados de exemplo da campanha salvos no navegador.
+
+## Capturas de tela
 
 | Estoque | Relatórios |
 | --- | --- |
-| ![Estoque](docs/telas/estoque.png) | ![Relatórios](docs/telas/relatorios.png) |
+| <img src="docs/telas/estoque.png" alt="Tabela de estoque com código, peça, tamanho, entradas, saídas, saldo e situação de cada item"> | <img src="docs/telas/relatorios.png" alt="Tela de relatórios com filtro de período e exportação em PDF, Excel e CSV"> |
 
 | Registro de entrada | Administração |
 | --- | --- |
-| ![Registro de entrada](docs/telas/registro.png) | ![Administração](docs/telas/administracao.png) |
+| <img src="docs/telas/registro.png" alt="Formulário de registro de entrada de doação"> | <img src="docs/telas/administracao.png" alt="Gestão de usuários com perfil e situação de cada pessoa"> |
 
 | Tema escuro | Login |
 | --- | --- |
-| ![Painel no tema escuro](docs/telas/painel-escuro.png) | ![Login](docs/telas/login.png) |
+| <img src="docs/telas/painel-escuro.png" alt="Painel no tema escuro"> | <img src="docs/telas/login.png" alt="Tela de login com a logo do SENAI"> |
 
-<p align="center"><img src="docs/telas/celular.png" alt="Painel no celular" width="280"></p>
+<p align="center">
+  <img src="docs/telas/celular.png" alt="Painel no celular" width="300">
+</p>
 
 ## Tecnologias
 
-| Camada           | Ferramentas                                                      |
-| ---------------- | ---------------------------------------------------------------- |
-| Front-end        | React 18, TypeScript, Vite, React Router                         |
-| Interface        | Tailwind CSS, Framer Motion, Lucide Icons, fontes Geist          |
-| Back-end / dados | Supabase (PostgreSQL, Auth, RLS)                                 |
-| Gráficos         | Chart.js, react-chartjs-2                                        |
-| Relatórios       | jsPDF + AutoTable (PDF), SheetJS (Excel), PapaParse (CSV)        |
-| Validação        | Zod                                                              |
-| Qualidade        | ESLint, TypeScript (`strict`), Vitest, GitHub Actions            |
+| Camada | Escolha | Por quê |
+| --- | --- | --- |
+| Interface | React 18 + TypeScript (`strict`), Vite e React Router | Telas tipadas de ponta a ponta e build rápido, com cada página carregada sob demanda |
+| Visual | Tailwind CSS com tokens de cor próprios, fontes Geist e Lucide Icons | Tema claro e escuro a partir das mesmas variáveis; números alinhados em fonte mono |
+| Movimento | Framer Motion | Transições curtas e com propósito, desligadas quando o sistema pede menos movimento |
+| Dados | [Supabase](https://supabase.com): PostgreSQL, Auth, RLS e Edge Function | As regras ficam no próprio banco, não só na tela |
+| Gráficos | Chart.js com react-chartjs-2 | Leve e fácil de adaptar às cores do tema |
+| Relatórios | jsPDF + AutoTable, SheetJS e PapaParse | PDF, Excel e CSV gerados no navegador, carregados só quando alguém exporta |
+| Validação | Zod | As mesmas regras nos formulários, no backup e no banco |
+| Hospedagem | [Vercel](https://vercel.com) | Publica sozinha a cada push na `main` |
+| Qualidade | ESLint, Vitest e GitHub Actions | Lint, testes e build a cada push e pull request |
 
-## Como rodar
+## Estrutura do projeto
 
-Pré-requisito: [Node.js](https://nodejs.org/) 20 ou superior.
-
-```bash
-npm install
-npm run dev
+```text
+.
+├── src/
+│   ├── App.tsx                 # rotas e provedores (tema, avisos, sessão)
+│   ├── paginas.ts              # páginas carregadas sob demanda e pré-carregamento
+│   ├── components/
+│   │   ├── Layout.tsx          # menu lateral, topo, menu do usuário e transições
+│   │   ├── Registro.tsx        # formulários de entrada, saída e descarte (atalhos E, S e D)
+│   │   ├── MeuPerfil.tsx       # nome, nome de usuário e senha da própria conta
+│   │   └── ui.tsx              # modal, campos, abas, esqueletos e números animados
+│   ├── pages/                  # Login, Painel, Entradas/Saídas/Descartes, Estoque, Relatórios, Administração
+│   ├── contexts/               # sessão, estoque, tema e avisos
+│   ├── data/
+│   │   ├── fonte.ts            # contrato comum às duas fontes de dados
+│   │   ├── fonteSupabase.ts    # produção: Supabase
+│   │   ├── fonteLocal.ts       # modo demonstração: navegador
+│   │   ├── servico.ts          # registro de atividades e limite de tentativas de login
+│   │   └── seed.ts             # dados de exemplo da campanha
+│   └── lib/                    # regras de estoque, validação, relatórios, backup e códigos dos itens
+├── supabase/
+│   ├── schema.sql              # tabelas, gatilhos e políticas de acesso (RLS)
+│   ├── functions/gerenciar-usuarios/  # Edge Function: criar, remover e renomear usuários, redefinir senha
+│   └── migracoes/              # mudanças aplicadas a bancos já existentes
+├── docs/telas/                 # capturas usadas neste README
+├── .github/workflows/ci.yml    # lint, testes e build a cada push
+└── vercel.json                 # cabeçalhos de segurança e rotas
 ```
 
-Acesse `http://localhost:5173`.
+## Como funciona
 
-### Modo demonstração
+### Duas fontes de dados, uma interface
 
-Sem configurar nada, o sistema roda em **modo demonstração**, com os dados de exemplo da campanha salvos no próprio navegador:
+```mermaid
+flowchart LR
+    T[Telas] --> S[servico.ts<br/>atividades e limite de login]
+    S --> F{fonte de dados}
+    F -->|.env preenchido| SB[(Supabase<br/>PostgreSQL + RLS)]
+    F -->|sem .env| LS[(navegador<br/>modo demonstração)]
+    SB -.-> EF[Edge Function<br/>gerenciar-usuarios]
+```
 
-| Perfil        | Usuário     | Senha       |
-| ------------- | ----------- | ----------- |
+As telas não sabem de onde vêm os dados: falam com um contrato único (`FonteDeDados`). Com as variáveis do Supabase preenchidas, tudo vai para o banco; sem elas, o sistema roda inteiro no navegador com os dados de exemplo da campanha. No meio, `servico.ts` registra cada ação no histórico e limita as tentativas de login.
+
+### O saldo nunca fica negativo
+
+O estoque não é um número guardado: é a soma das entradas menos as saídas e os descartes de cada peça, calculada pela view `estoque`. Um gatilho no banco confere o saldo depois de cada registro e recusa qualquer saída, descarte ou exclusão que o deixaria negativo, mesmo que alguém tente pela API, sem passar pela tela.
+
+### Quem pode o quê
+
+| Ação | Operador | Administrador |
+| --- | :---: | :---: |
+| Registrar entradas, saídas e descartes | ✓ | ✓ |
+| Consultar estoque, painel e relatórios | ✓ | ✓ |
+| Alterar o próprio nome, nome de usuário e senha | ✓ | ✓ |
+| Excluir registros | | ✓ |
+| Criar, editar e remover usuários | | ✓ |
+| Ver o registro de atividades, fazer backup e limpar dados | | ✓ |
+
+Cada linha vale também no banco, por políticas de RLS e gatilhos: esconder um botão nunca é a única proteção.
+
+## Rodando localmente
+
+Pré-requisito: [Node.js](https://nodejs.org) 20 ou mais novo.
+
+```bash
+git clone https://github.com/higornovocardoso/Logisteca-que-Aquece.git
+cd Logisteca-que-Aquece
+npm install
+npm run dev             # abre em http://localhost:5173
+```
+
+Sem configurar nada, o sistema abre em **modo demonstração**, com os dados de exemplo da campanha salvos no navegador:
+
+| Perfil | Usuário | Senha |
+| --- | --- | --- |
 | Administrador | `Visitante` | `Visitante` |
-| Operador      | `Marlene`   | `Marlene`   |
+| Operador | `Marlene` | `Marlene` |
 
-Em *Administração › Dados e backup*, o botão *Restaurar* desfaz as alterações.
+O botão *Restaurar exemplo* desfaz as alterações. O site publicado usa o banco de verdade, com acesso restrito à equipe.
 
-### Com o Supabase
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Verificação de tipos e build de produção |
+| `npm run preview` | Serve o build de produção |
+| `npm test` | Testes automatizados (Vitest) |
+| `npm run lint` | Análise estática (ESLint) |
 
-1. Crie um projeto no [Supabase](https://supabase.com/) e execute o script [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor.
-2. Publique a Edge Function de usuários: `supabase functions deploy gerenciar-usuarios`. Ela cria, remove e redefine a senha de usuários com a chave de serviço, que fica só no servidor.
+## Conectando ao Supabase
+
+1. Crie um projeto no [Supabase](https://supabase.com) e execute [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor.
+2. Publique a Edge Function de usuários: `supabase functions deploy gerenciar-usuarios`. Ela usa a chave de serviço, que fica só no servidor.
 3. Em **Authentication › Sign In / Providers**, desative *Allow new users to sign up*: as contas são criadas apenas pelo sistema.
 4. Em **Authentication › Users**, crie o primeiro usuário com o e-mail `seunome@logisticaqueaquece.local` e libere-o como administrador no SQL Editor:
    ```sql
    update public.perfis set perfil = 'Administrador', ativo = true, nome = 'Seu Nome' where usuario = 'seunome';
    ```
-5. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`) do projeto. Ao publicar na Vercel, troque também o endereço do Supabase na `Content-Security-Policy` do [`vercel.json`](vercel.json).
-6. Entre no sistema usando só `seunome` como nome de usuário. Os demais usuários são criados em *Administração › Usuários*.
+5. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`). O `.env` não é versionado.
+6. Entre usando só `seunome` como nome de usuário. As demais pessoas são cadastradas em *Administração › Usuários*.
 
-## Scripts
+Ao publicar na Vercel, cadastre as mesmas variáveis no painel do projeto e troque o endereço do Supabase na `Content-Security-Policy` do [`vercel.json`](vercel.json).
 
-| Comando             | Descrição                                   |
-| ------------------- | ------------------------------------------- |
-| `npm run dev`       | Servidor de desenvolvimento                 |
-| `npm run build`     | Verificação de tipos e build de produção    |
-| `npm run preview`   | Pré-visualização do build                   |
-| `npm test`          | Testes automatizados (Vitest)               |
-| `npm run lint`      | Análise estática com ESLint                 |
-| `npm run typecheck` | Verificação de tipos com TypeScript         |
+## Qualidade e automação
 
-## Estrutura
-
-```
-src/
-├── components/   # Layout, formulários de registro, rotas protegidas e componentes de interface
-├── contexts/     # Autenticação, estoque, tema e avisos
-├── data/         # Fontes de dados (Supabase e modo demonstração), serviço com registro de atividades
-├── lib/          # Regras de estoque, validação, relatórios, backup, limite de login e gráficos
-└── pages/        # Login, Painel, Entradas/Saídas/Descartes, Estoque, Relatórios e Administração
-supabase/
-├── schema.sql    # Tabelas, gatilhos, políticas de acesso (RLS) e funções de permissão
-└── functions/
-    └── gerenciar-usuarios/   # Edge Function: criar, remover e redefinir senha de usuários
+```mermaid
+flowchart LR
+    A[push na main] --> B[Vercel publica o site]
+    A --> C[GitHub Actions]
+    P[pull request] --> C
+    C --> D[ESLint]
+    C --> E[Testes com Vitest]
+    C --> F[Verificação de tipos e build]
 ```
 
-## Autor
+Os testes (`src/**/*.test.ts`) conferem, entre outras coisas, que:
 
-**Higor Cardoso**: [GitHub](https://github.com/higornovocardoso)
+- o saldo é calculado certo e saídas acima do estoque são recusadas;
+- operadores não excluem registros nem administram usuários;
+- senhas nunca ficam guardadas em texto puro e o login bloqueia após 5 tentativas;
+- trocar nome, nome de usuário e senha funciona e exige a senha atual;
+- backups adulterados são recusados antes de apagar qualquer dado, e backups antigos são convertidos para os tamanhos atuais;
+- relatórios, códigos dos itens e validações dos formulários dão o resultado esperado.
+
+## Segurança
+
+O sistema passou por uma rodada de testes de ataque contra o banco, a Edge Function e a interface. O que ficou valendo:
+
+- **Regras no banco.** Políticas de RLS em todas as tabelas, funções de permissão em um schema que a API não expõe e gatilhos que impedem estoque negativo, mudança do próprio perfil de acesso e registros em nome de outra pessoa ou com data retroativa.
+- **Contas.** Só o sistema cria contas: quem se cadastrar por fora fica sem acesso até um administrador liberar. Senhas com no mínimo 8 caracteres, guardadas com bcrypt no Supabase (PBKDF2 no modo demonstração).
+- **Login.** Até 5 tentativas a cada 15 minutos na tela, além do limite do próprio Supabase.
+- **Exportações e backups.** O CSV neutraliza fórmulas de planilha, e backups são validados com as mesmas regras do banco antes de qualquer alteração.
+- **Site.** Cabeçalhos em [`vercel.json`](vercel.json): `Content-Security-Policy`, HSTS, `Permissions-Policy`, `X-Frame-Options` e `nosniff`. Nenhum segredo vai para o navegador; a chave de serviço existe só dentro da Edge Function.
+
+## Acessibilidade e desempenho
+
+- **Carregamento.** A tela de login baixa menos da metade do JavaScript do sistema. As demais páginas são pré-carregadas enquanto o navegador está ocioso, e PDF, Excel e gráficos só chegam quando são usados.
+- **Menos movimento.** Com "reduzir movimento" ativado no sistema, contagens, transições e entradas em cascata são desligadas.
+- **Teclado.** Foco visível em tudo que é clicável, atalhos para os registros e para a busca, e janelas que fecham com <kbd>Esc</kbd>.
+- **Leitores de tela.** Números animados têm o valor final disponível para leitores de tela, e a barra com o destino das peças traz o resumo em texto.
+- **Celular.** Todas as telas funcionam no celular, com menu lateral recolhível e janelas que sobem da parte de baixo.
+
+---
+
+<div align="center">
+Feito por <a href="https://www.linkedin.com/in/higornovocardoso">Higor Cardoso</a> · Garopaba, SC
+</div>
