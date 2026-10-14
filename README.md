@@ -20,13 +20,14 @@ O sistema registra as roupas recebidas como doação, controla o que sai para di
 **Gestão**
 - **Painel:** indicadores com tendência semanal, o destino de todas as peças arrecadadas (distribuídas, em estoque e descartadas), gráficos por tipo, gênero, fornecedor e motivo de descarte, estoque crítico e últimos registros.
 - **Relatórios:** movimentações, resumo por tipo de peça, posição de estoque e doações por fornecedor, com filtro de período e exportação em **PDF**, **Excel** e **CSV**.
+- **Meu perfil:** cada usuário, administrador ou operador, altera o próprio nome e troca a própria senha, confirmando a senha atual.
 - **Administração:** usuários com perfil (*Administrador* ou *Operador*), registro de todas as atividades (quem fez o quê e quando), backup em JSON, importação de backup e limpeza dos dados para uma nova campanha.
 
 **Segurança**
 - Login com no máximo 5 tentativas a cada 15 minutos, com bloqueio temporário e contagem regressiva.
 - Senhas guardadas apenas como hash (PBKDF2 no modo demonstração e bcrypt no Supabase).
 - Permissões por perfil: operadores registram, administradores também excluem registros, gerenciam usuários e dados.
-- No Supabase, as regras ficam no próprio banco: políticas de acesso (RLS) e gatilhos que impedem estoque negativo e garantem a autoria do registro de atividades.
+- No Supabase, as regras ficam no próprio banco: políticas de acesso (RLS) e gatilhos que impedem estoque negativo, garantem a autoria do registro de atividades e impedem que alguém mude o próprio perfil de acesso.
 
 | Estoque | Relatórios |
 | --- | --- |

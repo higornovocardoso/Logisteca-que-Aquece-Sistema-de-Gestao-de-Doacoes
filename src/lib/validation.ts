@@ -64,6 +64,19 @@ export const edicaoUsuarioSchema = z.object({
   senha: z.union([z.literal(''), senhaSchema]).optional(),
 });
 
+export const meuPerfilSchema = z.object({
+  nome: nomePessoa('Informe o nome'),
+});
+
+export const trocaDeSenhaSchema = z
+  .object({
+    senhaAtual: z.string().min(1, 'Informe a senha atual'),
+    novaSenha: senhaSchema,
+    confirmacao: z.string(),
+  })
+  .refine((dados) => dados.confirmacao === dados.novaSenha, { message: 'As senhas não conferem', path: ['confirmacao'] })
+  .refine((dados) => dados.novaSenha !== dados.senhaAtual, { message: 'A nova senha deve ser diferente da atual', path: ['novaSenha'] });
+
 export type ErrosFormulario = Partial<Record<string, string>>;
 
 export function extrairErros(error: z.ZodError): ErrosFormulario {

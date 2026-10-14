@@ -85,6 +85,29 @@ create trigger perfis_manter_um_administrador
   after update or delete on public.perfis
   for each statement execute function public.manter_um_administrador();
 
+-- Quem não é administrador pode alterar apenas o próprio nome (Meu perfil);
+-- perfil, nome de usuário e acesso continuam sob controle dos administradores.
+create function public.proteger_campos_do_perfil()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is not null
+     and not privado.eh_administrador()
+     and (new.id, new.usuario, new.perfil, new.ativo, new.created_at)
+         is distinct from (old.id, old.usuario, old.perfil, old.ativo, old.created_at) then
+    raise exception 'Somente administradores podem alterar o perfil, o nome de usuário ou o acesso.' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger perfis_proteger_campos
+  before update on public.perfis
+  for each row execute function public.proteger_campos_do_perfil();
+
 -- ─────────────────────────────────────────────────────────────
 -- Itens: cada combinação de tipo de peça + tamanho + gênero
 -- ─────────────────────────────────────────────────────────────
@@ -214,6 +237,11 @@ create policy "perfis: ver o próprio ou ser administrador" on public.perfis
   for select to authenticated using (id = (select auth.uid()) or (select privado.eh_administrador()));
 create policy "perfis: administradores alteram" on public.perfis
   for update to authenticated using ((select privado.eh_administrador())) with check ((select privado.eh_administrador()));
+-- Em Meu perfil, cada um altera o próprio registro; o gatilho proteger_campos_do_perfil limita a alteração ao nome
+create policy "perfis: cada um altera o próprio nome" on public.perfis
+  for update to authenticated
+  using (id = (select auth.uid()) and (select privado.usuario_ativo()))
+  with check (id = (select auth.uid()));
 
 create policy "itens: usuários ativos consultam" on public.itens
   for select to authenticated using ((select privado.usuario_ativo()));
@@ -240,6 +268,7 @@ create policy "atividades: administradores consultam" on public.atividades
 revoke execute on function public.criar_perfil() from public, anon, authenticated;
 revoke execute on function public.preencher_autor_da_atividade() from public, anon, authenticated;
 revoke execute on function public.manter_um_administrador() from public, anon, authenticated;
+revoke execute on function public.proteger_campos_do_perfil() from public, anon, authenticated;
 revoke execute on function public.validar_estoque() from public, anon, authenticated;
 revoke execute on function privado.usuario_ativo() from public, anon;
 revoke execute on function privado.eh_administrador() from public, anon;

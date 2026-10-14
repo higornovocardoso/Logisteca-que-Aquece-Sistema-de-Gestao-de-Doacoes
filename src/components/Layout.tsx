@@ -14,10 +14,11 @@ import {
   Settings2,
   Sun,
   Trash2,
+  UserRound,
   X,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useEstoque } from '../contexts/EstoqueContext';
@@ -26,6 +27,7 @@ import { useToast } from '../contexts/ToastContext';
 import { servico } from '../data';
 import type { TipoMovimentacao } from '../lib/types';
 import { LogoSenai } from './Logo';
+import { MeuPerfil } from './MeuPerfil';
 import { RegistroProvider, useRegistro } from './Registro';
 import { Confirmacao } from './ui';
 
@@ -223,6 +225,8 @@ function MenuDoUsuario() {
   const { sessao, sair } = useAuth();
   const { tema, alternarTema } = useTheme();
   const [aberto, setAberto] = useState(false);
+  const [editandoPerfil, setEditandoPerfil] = useState(false);
+  const fecharPerfil = useCallback(() => setEditandoPerfil(false), []);
   const ref = useFecharAoClicarFora(aberto, () => setAberto(false));
   const iniciais = (sessao?.nome ?? '?')
     .split(' ')
@@ -253,6 +257,15 @@ function MenuDoUsuario() {
           <p className="text-[13px] font-medium">{sessao?.nome}</p>
           <p className="text-[11px] text-suave">{sessao?.perfil}</p>
         </div>
+        <OpcaoDeMenu
+          icone={UserRound}
+          aoClicar={() => {
+            setAberto(false);
+            setEditandoPerfil(true);
+          }}
+        >
+          Meu perfil
+        </OpcaoDeMenu>
         <OpcaoDeMenu icone={tema === 'claro' ? Moon : Sun} aoClicar={alternarTema}>
           {tema === 'claro' ? 'Tema escuro' : 'Tema claro'}
         </OpcaoDeMenu>
@@ -260,6 +273,7 @@ function MenuDoUsuario() {
           Sair
         </OpcaoDeMenu>
       </MenuSuspenso>
+      <MeuPerfil aberto={editandoPerfil} aoFechar={fecharPerfil} />
     </div>
   );
 }

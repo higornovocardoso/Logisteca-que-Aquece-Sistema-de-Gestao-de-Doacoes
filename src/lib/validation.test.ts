@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { descarteSchema, entradaSchema, extrairErros, novoUsuarioSchema, saidaSchema } from './validation';
+import { descarteSchema, entradaSchema, extrairErros, novoUsuarioSchema, saidaSchema, trocaDeSenhaSchema } from './validation';
 
 const entradaValida = {
   tipo: 'Casaco',
@@ -59,5 +59,15 @@ describe('saidaSchema', () => {
     expect(resultado.success).toBe(false);
     if (resultado.success) return;
     expect(extrairErros(resultado.error).item_id).toBe('Selecione o item');
+  });
+});
+
+describe('trocaDeSenhaSchema', () => {
+  it('exige a confirmação igual e uma senha nova diferente da atual', () => {
+    expect(trocaDeSenhaSchema.safeParse({ senhaAtual: 'antiga', novaSenha: 'nova-senha', confirmacao: 'nova-senha' }).success).toBe(true);
+    const diferente = trocaDeSenhaSchema.safeParse({ senhaAtual: 'antiga', novaSenha: 'nova-senha', confirmacao: 'outra' });
+    expect(!diferente.success && extrairErros(diferente.error).confirmacao).toBe('As senhas não conferem');
+    const repetida = trocaDeSenhaSchema.safeParse({ senhaAtual: 'mesma-senha', novaSenha: 'mesma-senha', confirmacao: 'mesma-senha' });
+    expect(!repetida.success && extrairErros(repetida.error).novaSenha).toBe('A nova senha deve ser diferente da atual');
   });
 });

@@ -207,7 +207,7 @@ export function Painel() {
 
   return (
     <>
-      <CabecalhoPagina sobretitulo="Campanha de agasalhos · inverno 2025" titulo="Painel" descricao="Visão geral das doações recebidas, distribuídas e em estoque." />
+      <CabecalhoPagina titulo="Painel" descricao="Visão geral das doações recebidas, distribuídas e em estoque." />
 
       <section className="grid gap-px overflow-hidden rounded-xl border border-linha bg-linha shadow-cartao sm:grid-cols-2 xl:grid-cols-4">
         <Indicador

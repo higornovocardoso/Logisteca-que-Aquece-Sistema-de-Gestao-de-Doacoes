@@ -9,6 +9,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
+import { createPortal } from 'react-dom';
 
 export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
   return (
@@ -20,12 +21,10 @@ export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
 }
 
 export function CabecalhoPagina({
-  sobretitulo,
   titulo,
   descricao,
   acoes,
 }: {
-  sobretitulo?: string;
   titulo: string;
   descricao?: string;
   acoes?: ReactNode;
@@ -33,7 +32,6 @@ export function CabecalhoPagina({
   return (
     <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        {sobretitulo && <p className="rotulo-mono mb-1.5 text-brasa">{sobretitulo}</p>}
         <h1 className="text-2xl font-semibold tracking-tight">{titulo}</h1>
         {descricao && <p className="mt-1 max-w-2xl text-suave">{descricao}</p>}
       </div>
@@ -146,7 +144,8 @@ export function Modal({
     };
   }, [aberto, aoFechar]);
 
-  return (
+  // Fica no <body> para não ser recortada por elementos com backdrop-filter, como o cabeçalho
+  return createPortal(
     <AnimatePresence>
       {aberto && (
         <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
@@ -183,7 +182,8 @@ export function Modal({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
