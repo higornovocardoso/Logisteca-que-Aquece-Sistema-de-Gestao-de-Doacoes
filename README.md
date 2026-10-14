@@ -28,6 +28,9 @@ O sistema registra as roupas recebidas como doação, controla o que sai para di
 - Senhas guardadas apenas como hash (PBKDF2 no modo demonstração e bcrypt no Supabase).
 - Permissões por perfil: operadores registram, administradores também excluem registros, gerenciam usuários e dados.
 - No Supabase, as regras ficam no próprio banco: políticas de acesso (RLS) e gatilhos que impedem estoque negativo, garantem a autoria do registro de atividades e impedem que alguém mude o próprio perfil de acesso.
+- O autor e o horário de cada registro são definidos pelo servidor; contas criadas fora do sistema ficam sem acesso até um administrador liberar.
+- Exportações em CSV neutralizam fórmulas de planilha, e backups são validados com as mesmas regras do banco antes da importação.
+- Cabeçalhos de segurança na Vercel: Content-Security-Policy, HSTS, Permissions-Policy e proteção contra iframes.
 
 | Estoque | Relatórios |
 | --- | --- |
@@ -81,9 +84,13 @@ Em *Administração › Dados e backup*, o botão *Restaurar* desfaz as alteraç
 
 1. Crie um projeto no [Supabase](https://supabase.com/) e execute o script [`supabase/schema.sql`](supabase/schema.sql) no SQL Editor.
 2. Publique a Edge Function de usuários: `supabase functions deploy gerenciar-usuarios`. Ela cria, remove e redefine a senha de usuários com a chave de serviço, que fica só no servidor.
-3. Em **Authentication › Users**, crie o primeiro administrador com o e-mail `seunome@logisticaqueaquece.local`. Em *User Metadata*, informe `{"nome": "Seu Nome", "perfil": "Administrador"}`.
-4. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`) do projeto.
-5. Entre no sistema usando só `seunome` como nome de usuário. Os demais usuários são criados em *Administração › Usuários*.
+3. Em **Authentication › Sign In / Providers**, desative *Allow new users to sign up*: as contas são criadas apenas pelo sistema.
+4. Em **Authentication › Users**, crie o primeiro usuário com o e-mail `seunome@logisticaqueaquece.local` e libere-o como administrador no SQL Editor:
+   ```sql
+   update public.perfis set perfil = 'Administrador', ativo = true, nome = 'Seu Nome' where usuario = 'seunome';
+   ```
+5. Copie o `.env.example` para `.env` e preencha a URL e a chave pública (*publishable* ou `anon`) do projeto. Ao publicar na Vercel, troque também o endereço do Supabase na `Content-Security-Policy` do [`vercel.json`](vercel.json).
+6. Entre no sistema usando só `seunome` como nome de usuário. Os demais usuários são criados em *Administração › Usuários*.
 
 ## Scripts
 

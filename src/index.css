@@ -62,12 +62,24 @@
     *::before,
     *::after {
       animation-duration: 0.01ms !important;
+      animation-delay: 0ms !important;
       transition-duration: 0.01ms !important;
     }
   }
 }
 
 @layer components {
+  /* Entrada em cascata: cada bloco surge logo após o anterior */
+  .revelar > * {
+    animation: surgir 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .revelar > :nth-child(2) { animation-delay: 50ms; }
+  .revelar > :nth-child(3) { animation-delay: 100ms; }
+  .revelar > :nth-child(4) { animation-delay: 150ms; }
+  .revelar > :nth-child(5) { animation-delay: 200ms; }
+  .revelar > :nth-child(6) { animation-delay: 250ms; }
+  .revelar > :nth-child(n + 7) { animation-delay: 300ms; }
+
   /* Rótulo técnico: caixa-alta em fonte mono, para cabeçalhos de tabela e sobretítulos */
   .rotulo-mono {
     @apply font-mono text-rotulo font-medium uppercase text-suave;

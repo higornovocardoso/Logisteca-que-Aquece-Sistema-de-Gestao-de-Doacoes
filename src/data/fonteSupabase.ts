@@ -59,11 +59,10 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
     },
 
     async registrarEntrada(entrada) {
-      const { data: item, error } = await supabase
-        .from('itens')
-        .upsert({ tipo: entrada.tipo, tamanho: entrada.tamanho, genero: entrada.genero }, { onConflict: 'tipo,tamanho,genero' })
-        .select('id')
-        .single();
+      // Cria o item se for uma combinação nova; se já existir, não altera nada (só administradores alteram itens)
+      const chave = { tipo: entrada.tipo, tamanho: entrada.tamanho, genero: entrada.genero };
+      falhar((await supabase.from('itens').upsert(chave, { onConflict: 'tipo,tamanho,genero', ignoreDuplicates: true })).error);
+      const { data: item, error } = await supabase.from('itens').select('id').match(chave).single();
       falhar(error);
       const resultado = await supabase.from('movimentacoes').insert({
         item_id: item!.id,
@@ -116,6 +115,7 @@ export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados
 
     async entrar(usuario, senha) {
       const { error } = await supabase.auth.signInWithPassword({ email: paraEmail(usuario), password: senha });
+      if (error?.status === 429) throw new Error('Muitas tentativas de acesso a partir desta rede. Aguarde alguns minutos e tente novamente.');
       if (error) throw new ErroDeNegocio('Usuário ou senha incorretos.');
       const sessao = await sessaoAtual();
       if (!sessao) {

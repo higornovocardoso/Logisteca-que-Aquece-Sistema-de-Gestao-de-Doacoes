@@ -1,6 +1,6 @@
 import { FileSpreadsheet, FileText, FileX, Loader2, Sheet, type LucideIcon } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { CabecalhoPagina, Campo, Carregando, EstadoVazio, Selecao } from '../components/ui';
+import { CabecalhoPagina, Campo, EstadoVazio, Esqueleto, Selecao } from '../components/ui';
 import { useEstoque } from '../contexts/EstoqueContext';
 import { useToast } from '../contexts/ToastContext';
 import { formatarNumero } from '../lib/format';
@@ -51,7 +51,7 @@ export function Relatorios() {
     }
   }
 
-  if (carregando) return <Carregando />;
+  if (carregando) return <Esqueleto />;
 
   return (
     <>

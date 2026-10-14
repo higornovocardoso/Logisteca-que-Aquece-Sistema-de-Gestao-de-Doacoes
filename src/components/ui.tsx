@@ -1,9 +1,10 @@
-import { AnimatePresence, motion } from 'framer-motion';
+import { animate, AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Loader2, X, type LucideIcon } from 'lucide-react';
 import {
   useEffect,
   useId,
   useRef,
+  useState,
   type InputHTMLAttributes,
   type ReactNode,
   type SelectHTMLAttributes,
@@ -16,6 +17,52 @@ export function Carregando({ texto = 'Carregando…' }: { texto?: string }) {
     <div className="flex items-center justify-center gap-3 py-20 text-suave" role="status">
       <Loader2 className="h-5 w-5 animate-spin" />
       <span className="text-sm">{texto}</span>
+    </div>
+  );
+}
+
+/** Silhueta da página enquanto os dados chegam: evita o "pulo" do conteúdo ao carregar. */
+export function Esqueleto({ formato = 'tabela', cabecalho = true }: { formato?: 'painel' | 'tabela'; cabecalho?: boolean }) {
+  const bloco = 'rounded-md bg-linha/60 animate-pulso';
+  return (
+    <div role="status" aria-label="Carregando" className="animate-surgir">
+      {cabecalho && (
+        <div className="mb-6 space-y-2.5">
+          <div className={`${bloco} h-7 w-44`} />
+          <div className={`${bloco} h-4 w-80 max-w-full`} />
+        </div>
+      )}
+      {formato === 'painel' ? (
+        <>
+          <div className="grid gap-px overflow-hidden rounded-xl border border-linha bg-linha sm:grid-cols-2 xl:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="space-y-3 bg-superficie px-5 py-4">
+                <div className={`${bloco} h-3 w-20`} />
+                <div className={`${bloco} h-7 w-16`} />
+                <div className={`${bloco} h-3 w-28`} />
+              </div>
+            ))}
+          </div>
+          <div className="mt-5 grid gap-5 lg:grid-cols-[2fr_3fr]">
+            <div className="painel h-72" />
+            <div className="painel h-72" />
+          </div>
+        </>
+      ) : (
+        <div className="painel overflow-hidden">
+          <div className="flex gap-3 border-b border-linha p-3">
+            <div className={`${bloco} h-9 flex-1`} />
+            <div className={`${bloco} hidden h-9 w-36 sm:block`} />
+          </div>
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className="flex items-center gap-6 border-b border-linha px-4 py-3.5 last:border-0">
+              <div className={`${bloco} h-3.5 w-20`} />
+              <div className={`${bloco} h-3.5 flex-1`} style={{ maxWidth: `${40 + ((i * 37) % 45)}%` }} />
+              <div className={`${bloco} h-3.5 w-10`} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -345,5 +392,44 @@ export function Escolha<T extends string>({
         </p>
       )}
     </fieldset>
+  );
+}
+
+const formatarInteiro = (n: number) => n.toLocaleString('pt-BR');
+
+/** Número que "conta" até o valor ao aparecer e ao mudar; respeita a preferência por movimento reduzido. */
+export function NumeroAnimado({ valor, formatar = formatarInteiro }: { valor: number; formatar?: (n: number) => string }) {
+  const reduzir = useReducedMotion();
+  const ref = useRef<HTMLSpanElement>(null);
+  const atual = useRef(reduzir ? valor : 0);
+  // O texto inicial é fixo: daí em diante quem escreve no elemento é a animação, não o React
+  const [inicial] = useState(() => formatar(atual.current));
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (reduzir) {
+      el.textContent = formatar(valor);
+      atual.current = valor;
+      return;
+    }
+    const controle = animate(atual.current, valor, {
+      duration: 0.9,
+      ease: [0.22, 1, 0.36, 1],
+      onUpdate: (n) => {
+        atual.current = n;
+        el.textContent = formatar(Math.round(n));
+      },
+    });
+    return () => controle.stop();
+  }, [valor, reduzir, formatar]);
+
+  return (
+    <>
+      <span ref={ref} aria-hidden="true">
+        {inicial}
+      </span>
+      <span className="sr-only">{formatar(valor)}</span>
+    </>
   );
 }

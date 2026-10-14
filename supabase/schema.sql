@@ -15,8 +15,10 @@ create table public.perfis (
   created_at  timestamptz not null default now()
 );
 
--- Cria o perfil automaticamente quando um usuário é criado em Authentication › Users.
+-- Cria o perfil automaticamente quando um usuário é criado.
 -- O nome de usuário é a parte do e-mail antes do @ (ex.: higor@logisticaqueaquece.local → higor).
+-- Perfil e liberação de acesso vêm de app_metadata, que só a chave de serviço (Edge Function) define:
+-- contas criadas por cadastro público ficam desativadas e sem permissão até um administrador liberar.
 create function public.criar_perfil()
 returns trigger
 language plpgsql
@@ -24,12 +26,13 @@ security definer
 set search_path = ''
 as $$
 begin
-  insert into public.perfis (id, nome, usuario, perfil)
+  insert into public.perfis (id, nome, usuario, perfil, ativo)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data ->> 'nome', initcap(split_part(new.email, '@', 1))),
+    coalesce(nullif(trim(new.raw_user_meta_data ->> 'nome'), ''), initcap(split_part(new.email, '@', 1))),
     split_part(new.email, '@', 1),
-    coalesce(new.raw_user_meta_data ->> 'perfil', 'Operador')
+    case when new.raw_app_meta_data ->> 'perfil' in ('Administrador', 'Operador') then new.raw_app_meta_data ->> 'perfil' else 'Operador' end,
+    new.raw_app_meta_data ? 'perfil'
   );
   return new;
 end;
@@ -186,6 +189,30 @@ create constraint trigger movimentacoes_validar_estoque
   deferrable initially immediate
   for each row execute function public.validar_estoque();
 
+-- Autor e momento do registro vêm do servidor: ninguém registra em nome de outra pessoa
+-- nem com data retroativa. Só administradores, ao importar um backup, preservam os valores originais.
+create function public.preencher_autor_da_movimentacao()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if auth.uid() is not null and not privado.eh_administrador() then
+    new.created_by := auth.uid();
+    new.created_at := now();
+  else
+    new.created_by := coalesce(new.created_by, auth.uid());
+    new.created_at := coalesce(new.created_at, now());
+  end if;
+  return new;
+end;
+$$;
+
+create trigger movimentacoes_preencher_autor
+  before insert on public.movimentacoes
+  for each row execute function public.preencher_autor_da_movimentacao();
+
 -- ─────────────────────────────────────────────────────────────
 -- Registro de atividades (quem fez o quê e quando)
 -- ─────────────────────────────────────────────────────────────
@@ -247,8 +274,8 @@ create policy "itens: usuários ativos consultam" on public.itens
   for select to authenticated using ((select privado.usuario_ativo()));
 create policy "itens: usuários ativos cadastram" on public.itens
   for insert to authenticated with check ((select privado.usuario_ativo()));
-create policy "itens: usuários ativos atualizam" on public.itens
-  for update to authenticated using ((select privado.usuario_ativo())) with check ((select privado.usuario_ativo()));
+create policy "itens: administradores atualizam" on public.itens
+  for update to authenticated using ((select privado.eh_administrador())) with check ((select privado.eh_administrador()));
 create policy "itens: administradores excluem" on public.itens
   for delete to authenticated using ((select privado.eh_administrador()));
 
@@ -270,14 +297,17 @@ revoke execute on function public.preencher_autor_da_atividade() from public, an
 revoke execute on function public.manter_um_administrador() from public, anon, authenticated;
 revoke execute on function public.proteger_campos_do_perfil() from public, anon, authenticated;
 revoke execute on function public.validar_estoque() from public, anon, authenticated;
+revoke execute on function public.preencher_autor_da_movimentacao() from public, anon, authenticated;
 revoke execute on function privado.usuario_ativo() from public, anon;
 revoke execute on function privado.eh_administrador() from public, anon;
 grant execute on function privado.usuario_ativo() to authenticated;
 grant execute on function privado.eh_administrador() to authenticated;
 
--- Primeiro acesso: crie o primeiro administrador em Authentication › Users com o e-mail
---   seunome@logisticaqueaquece.local
--- e, em "User Metadata", informe {"nome": "Seu Nome", "perfil": "Administrador"}.
+-- Primeiro acesso:
+-- 1. Em Authentication › Sign In / Providers, desative "Allow new users to sign up".
+-- 2. Em Authentication › Users, crie o usuário seunome@logisticaqueaquece.local (marque "Auto Confirm User").
+-- 3. Libere-o como administrador:
+--      update public.perfis set perfil = 'Administrador', ativo = true, nome = 'Seu Nome' where usuario = 'seunome';
 -- No login do sistema, use apenas "seunome" como nome de usuário. Os demais usuários
 -- são criados pelo próprio sistema (Administração › Usuários), por meio da Edge Function
 -- supabase/functions/gerenciar-usuarios.
