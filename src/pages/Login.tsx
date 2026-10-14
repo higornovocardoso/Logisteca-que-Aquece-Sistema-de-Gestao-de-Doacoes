@@ -82,9 +82,7 @@ export function Login() {
       <motion.div className="w-full max-w-[380px]" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
         <div className="mb-8 flex flex-col items-center text-center">
           <LogoSenai className="h-10" />
-          <h1 className="mt-5 text-xl font-semibold tracking-tight">Logística que Aquece</h1>
-          <p className="mt-1 text-[13px] text-suave">Controle de estoque da campanha de agasalhos</p>
-        </div>
+          <h1 className="mt-5 text-xl font-semibold tracking-tight">Logística que Aquece</h1>        </div>
 
         <div className="painel p-6">
           <form onSubmit={aoEnviar} className="space-y-4" noValidate>
