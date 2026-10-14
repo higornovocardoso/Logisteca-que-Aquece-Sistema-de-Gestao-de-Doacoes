@@ -172,13 +172,6 @@ function BarraLateral({ aoNavegar }: { aoNavegar?: () => void }) {
         </div>
       </div>
       <Navegacao aoNavegar={aoNavegar} />
-      <div className="mt-auto space-y-1 px-2.5 pt-6 font-mono text-[10.5px] text-white/40">
-        <p className="flex items-center gap-1.5">
-          <span className={`h-1.5 w-1.5 rounded-full ${servico.modo === 'demo' ? 'bg-trigo' : 'bg-emerald-400'}`} />
-          {servico.modo === 'demo' ? 'Modo demonstração' : 'Conectado ao banco'}
-        </p>
-        <p>Rede Feminina de Garopaba · SENAI</p>
-      </div>
     </div>
   );
 }
