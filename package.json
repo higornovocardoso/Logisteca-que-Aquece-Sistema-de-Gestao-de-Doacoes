@@ -1,0 +1,63 @@
+{
+  "name": "logistica-que-aquece",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Controle de estoque da campanha de agasalhos Logística que Aquece (SENAI e Rede Feminina de Garopaba).",
+  "license": "MIT",
+  "author": "Higor Cardoso",
+  "homepage": "https://logisticaqueaquece.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/higornovocardoso/Logisteca-que-Aquece.git"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "typecheck": "tsc -b",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
+    "@supabase/supabase-js": "^2.39.8",
+    "chart.js": "^4.4.0",
+    "date-fns": "^3.0.6",
+    "framer-motion": "^10.16.16",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
+    "lucide-react": "^0.344.0",
+    "papaparse": "^5.4.1",
+    "react": "^18.3.1",
+    "react-chartjs-2": "^5.2.0",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.3",
+    "xlsx": "^0.18.5",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^8.57.1",
+    "@types/node": "^20.11.28",
+    "@types/papaparse": "^5.3.14",
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "globals": "^15.15.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "terser": "^5.36.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^7.18.0",
+    "vite": "^5.1.6",
+    "vitest": "^2.1.9"
+  }
+}

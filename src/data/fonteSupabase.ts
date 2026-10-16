@@ -1,0 +1,207 @@
+import { createClient, FunctionsHttpError, type PostgrestError } from '@supabase/supabase-js';
+import type { Atividade, Item, Movimentacao, Usuario } from '../lib/types';
+import { ErroDeNegocio, type FonteDeDados, type Sessao } from './fonte';
+
+/** Domínio usado para transformar o nome de usuário em e-mail no Supabase Auth. */
+const DOMINIO_USUARIOS = 'logisticaqueaquece.local';
+
+function paraEmail(usuario: string): string {
+  const limpo = usuario.trim().toLowerCase();
+  return limpo.includes('@') ? limpo : `${limpo}@${DOMINIO_USUARIOS}`;
+}
+
+const FALHA_DE_CONEXAO = 'Não foi possível falar com o servidor. Confira a internet e tente novamente.';
+
+function falhar(error: PostgrestError | null): void {
+  if (!error) return;
+  // P0001: erros de regra levantados pelos gatilhos do banco (ver supabase/schema.sql), já em português
+  if (error.code === 'P0001') throw new ErroDeNegocio(error.message);
+  if (error.code === '42501') throw new ErroDeNegocio('Você não tem permissão para fazer isso.');
+  if (error.code === '23514' || error.code === '22P02') throw new ErroDeNegocio('Algum dado não está no formato esperado. Revise e tente de novo.');
+  console.error(error);
+  throw new Error(FALHA_DE_CONEXAO);
+}
+
+export function criarFonteSupabase(url: string, chaveAnon: string): FonteDeDados {
+  const supabase = createClient(url, chaveAnon);
+
+  /** Operações que exigem a chave de serviço rodam na Edge Function (supabase/functions/gerenciar-usuarios). */
+  const gerenciarUsuarios = async (corpo: Record<string, unknown>) => {
+    const { error } = await supabase.functions.invoke('gerenciar-usuarios', { body: corpo });
+    if (!error) return;
+    if (error instanceof FunctionsHttpError) {
+      const resposta = (await error.context.json().catch(() => null)) as { erro?: string } | null;
+      throw new ErroDeNegocio(resposta?.erro ?? 'Não foi possível concluir a operação.');
+    }
+    console.error(error);
+    throw new Error(FALHA_DE_CONEXAO);
+  };
+
+  const sessaoAtual = async (): Promise<Sessao | null> => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return null;
+    const { data: perfil } = await supabase.from('perfis').select('*').eq('id', data.user.id).single();
+    if (!perfil?.ativo) return null;
+    return { id: perfil.id, nome: perfil.nome, usuario: perfil.usuario, perfil: perfil.perfil };
+  };
+
+  const inserirRetirada = async (tipo: 'saida' | 'descarte', dados: Record<string, unknown>) => {
+    const { error } = await supabase.from('movimentacoes').insert({ ...dados, tipo, observacao: dados.observacao || null });
+    falhar(error);
+  };
+
+  return {
+    async carregar() {
+      const [itens, movimentacoes] = await Promise.all([
+        supabase.from('itens').select('*').order('tipo'),
+        supabase.from('movimentacoes').select('*').order('data', { ascending: false }),
+      ]);
+      falhar(itens.error);
+      falhar(movimentacoes.error);
+      return { itens: (itens.data ?? []) as Item[], movimentacoes: (movimentacoes.data ?? []) as Movimentacao[] };
+    },
+
+    async registrarEntrada(entrada) {
+      // Cria o item se for uma combinação nova; se já existir, não altera nada (só administradores alteram itens)
+      const chave = { tipo: entrada.tipo, tamanho: entrada.tamanho, genero: entrada.genero };
+      falhar((await supabase.from('itens').upsert(chave, { onConflict: 'tipo,tamanho,genero', ignoreDuplicates: true })).error);
+      const { data: item, error } = await supabase.from('itens').select('id').match(chave).single();
+      falhar(error);
+      const resultado = await supabase.from('movimentacoes').insert({
+        item_id: item!.id,
+        tipo: 'entrada',
+        quantidade: entrada.quantidade,
+        data: entrada.data,
+        fornecedor: entrada.fornecedor,
+        responsavel: entrada.responsavel,
+        observacao: entrada.observacao || null,
+      });
+      falhar(resultado.error);
+    },
+
+    registrarSaida: (saida) => inserirRetirada('saida', { ...saida }),
+    registrarDescarte: (descarte) => inserirRetirada('descarte', { ...descarte }),
+
+    async excluirMovimentacao(id) {
+      const { error } = await supabase.from('movimentacoes').delete().eq('id', id);
+      falhar(error);
+    },
+
+    async limparDados() {
+      falhar((await supabase.from('movimentacoes').delete().not('id', 'is', null)).error);
+      falhar((await supabase.from('itens').delete().not('id', 'is', null)).error);
+    },
+
+    async importarDados(dados) {
+      await this.limparDados();
+      // Os ids do backup podem não ser UUIDs (ex.: backups de versões antigas): gera novos e remapeia
+      const novosIds = new Map(dados.itens.map((item) => [item.id, crypto.randomUUID()]));
+      falhar(
+        (
+          await supabase.from('itens').insert(
+            dados.itens.map(({ id, tipo, tamanho, genero, created_at }) => ({ id: novosIds.get(id), tipo, tamanho, genero, created_at })),
+          )
+        ).error,
+      );
+      // Um único insert: o gatilho de estoque confere o saldo ao fim do comando, com todas as linhas já gravadas
+      falhar(
+        (
+          await supabase.from('movimentacoes').insert(
+            dados.movimentacoes.map(({ id: _id, item_id, ...mov }) => ({ ...mov, item_id: novosIds.get(item_id) })),
+          )
+        ).error,
+      );
+    },
+
+    sessaoAtual,
+
+    async entrar(usuario, senha) {
+      const { error } = await supabase.auth.signInWithPassword({ email: paraEmail(usuario), password: senha });
+      if (error?.status === 429) throw new Error('Muitas tentativas de acesso a partir desta rede. Aguarde alguns minutos e tente novamente.');
+      if (error) throw new ErroDeNegocio('Usuário ou senha incorretos.');
+      const sessao = await sessaoAtual();
+      if (!sessao) {
+        await supabase.auth.signOut();
+        throw new ErroDeNegocio('Este usuário está desativado. Fale com um administrador.');
+      }
+      return sessao;
+    },
+
+    async sair() {
+      await supabase.auth.signOut();
+    },
+
+    async listarUsuarios() {
+      const { data, error } = await supabase.from('perfis').select('*').order('nome');
+      falhar(error);
+      return (data ?? []) as Usuario[];
+    },
+
+    async criarUsuario(novo) {
+      await gerenciarUsuarios({ acao: 'criar', ...novo });
+    },
+
+    async alterarUsuario(id, { senha, usuario, ...alteracao }) {
+      // O nome de usuário é o e-mail de login: a Edge Function troca os dois juntos
+      if (usuario) await gerenciarUsuarios({ acao: 'alterar_usuario', id, usuario });
+      if (Object.keys(alteracao).length > 0) {
+        const { error } = await supabase.from('perfis').update(alteracao).eq('id', id);
+        falhar(error);
+      }
+      if (senha) await gerenciarUsuarios({ acao: 'redefinir_senha', id, senha });
+    },
+
+    async removerUsuario(id) {
+      await gerenciarUsuarios({ acao: 'remover', id });
+    },
+
+    async atualizarMeuPerfil(nome) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user) throw new ErroDeNegocio('Sua sessão expirou. Entre novamente.');
+      // A política de acesso e o gatilho proteger_campos_do_perfil limitam a alteração ao próprio nome
+      const { error } = await supabase.from('perfis').update({ nome }).eq('id', data.user.id);
+      falhar(error);
+    },
+
+    async trocarMinhaSenha(senhaAtual, novaSenha) {
+      const { data } = await supabase.auth.getUser();
+      if (!data.user?.email) throw new ErroDeNegocio('Sua sessão expirou. Entre novamente.');
+      const conferencia = await supabase.auth.signInWithPassword({ email: data.user.email, password: senhaAtual });
+      if (conferencia.error) throw new ErroDeNegocio('A senha atual está incorreta.');
+      const { error } = await supabase.auth.updateUser({ password: novaSenha });
+      if (error?.code === 'same_password') throw new ErroDeNegocio('A nova senha deve ser diferente da atual.');
+      if (error?.code === 'weak_password') throw new ErroDeNegocio('Senha fraca ou já exposta em vazamentos de dados. Escolha outra.');
+      if (error) {
+        console.error(error);
+        throw new ErroDeNegocio('Não foi possível trocar a senha. Tente novamente.');
+      }
+    },
+
+    async alterarMeuUsuario(novoUsuario, senhaAtual) {
+      // O nome de usuário é o e-mail de login no Supabase Auth: só a Edge Function, com a chave de serviço, troca os dois juntos
+      await gerenciarUsuarios({ acao: 'alterar_meu_usuario', usuario: novoUsuario, senha: senhaAtual });
+      await supabase.auth.refreshSession();
+    },
+
+    async listarAtividades() {
+      const { data, error } = await supabase.from('atividades').select('*').order('momento', { ascending: false }).limit(2000);
+      falhar(error);
+      return (data ?? []) as Atividade[];
+    },
+
+    async registrarAtividade(acao, descricao) {
+      // Autor, nome e horário são preenchidos pelo próprio banco (gatilho preencher_autor_da_atividade)
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) return;
+      const { error } = await supabase.from('atividades').insert({ acao, descricao, usuario: '' });
+      falhar(error);
+    },
+
+    aoEncerrarSessao(acao) {
+      const { data } = supabase.auth.onAuthStateChange((evento) => {
+        if (evento === 'SIGNED_OUT') acao();
+      });
+      return () => data.subscription.unsubscribe();
+    },
+  };
+}
